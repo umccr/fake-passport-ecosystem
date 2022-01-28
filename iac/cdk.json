@@ -1,0 +1,5 @@
+{
+  "app": "npx ts-node index",
+  "context": {
+  }
+}

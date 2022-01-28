@@ -1,0 +1,26 @@
+{
+  "name": "iac",
+  "version": "0.0.0",
+  "description": "Infrastructure for a website with API in AWS",
+  "scripts": {
+    "//comment": "No scripts needed - just use 'npx cdk' to perform IaC tasks"
+  },
+  "author": {
+    "name": "UMCCR",
+    "url": "https://umccr.org/",
+    "organization": true
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "aws-cdk-lib": "2.8.0",
+    "constructs": "^10.0.43",
+    "esbuild": "^0.14.13"
+  },
+  "devDependencies": {
+    "@types/node": "^14.18.9",
+    "aws-cdk": "2.8.0",
+    "prettier": "^2.5.1",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.5"
+  }
+}
