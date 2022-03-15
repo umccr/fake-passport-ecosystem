@@ -1,12 +1,12 @@
-import { AppBroker } from './app-broker';
+import { AppBroker } from './app-broker/app-broker';
 import NodeCache from 'node-cache';
 import serverlessExpress from '@vendia/serverless-express';
-import { DynamoDBAdapter } from './business/db/oidc-provider-dynamodb-adapter';
-import { AppControl } from './app-control';
+import { DynamoDBAdapter } from './common/business/db/oidc-provider-dynamodb-adapter';
+import { AppControl } from './app-control/app-control';
 
 const appCache = new NodeCache({ useClones: false, checkperiod: 0, stdTTL: 0, maxKeys: 1000 });
 
-const shorterStringReplacer = (key, value) => {
+const shorterStringReplacer = (key: string, value: string): string => {
   if (typeof value === 'string') {
     if (value.length > 256) return value.substr(0, 256) + '... truncated ...';
   }
@@ -20,7 +20,7 @@ const shorterStringReplacer = (key, value) => {
  * @param ev
  * @param context
  */
-export const handler = async (ev, context) => {
+export const handler = async (ev: any, context: any) => {
   //
   // BEWARE - THIS ENTRYPOINT IS EXPOSED TO THE INTERNET (i.e the internet can craft incoming
   // HTTP requests saying anything) - SO WE CHECK AND DOUBLE CHECK THE VALIDITY OF ALL INFORMATION
@@ -84,7 +84,7 @@ export const handler = async (ev, context) => {
     appCache.set(domainPrefix, newApp);
   }
 
-  const app: AppBroker = appCache.get(domainPrefix);
+  const app: AppBroker = appCache.get(domainPrefix)!;
 
   const serverlessExpressInstance = serverlessExpress({ app: app.getServer() });
 

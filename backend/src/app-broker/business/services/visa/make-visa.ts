@@ -37,7 +37,7 @@ export function makeCompactVisaSigned(
     const startingAssertions = Array.from(visaAssertions);
 
     // make sure we don't accidentally use the input assertions array any more
-    visaAssertions = null;
+    visaAssertions = [];
 
     const expiryDate = add(new Date(), duration);
     const visaJti = cryptoRandomString({ length: 16, type: 'alphanumeric' });
@@ -47,7 +47,7 @@ export function makeCompactVisaSigned(
 
     const visaContent = startingAssertions.join(' ');
 
-    const seed = forge.util.hexToBytes(keyPrivateJose.dHex);
+    const seed = forge.util.hexToBytes(keyPrivateJose.dHex!);
 
     if (seed.length != 32) throw Error(`Private keys (seed) for ED25519 must be exactly 32 octets but for kid ${kid} was ${seed.length}`);
 
@@ -63,9 +63,10 @@ export function makeCompactVisaSigned(
       v: visaContent,
       k: kid,
       s: base64url(Buffer.from(signature)),
+      i: ''
     };
 
-    if (issuer) visa['i'] = issuer;
+    if (issuer) visa.i = issuer;
 
     console.log(`Generated compact visa that had length in characters of ${JSON.stringify(visa).length}`);
 
@@ -106,10 +107,10 @@ export async function makeJwtVisaSigned(
     const newJwtSigner = new SignJWT(claims);
 
     newJwtSigner
-      .setProtectedHeader({ alg: keyPrivateJose.alg, typ: 'JWT', kid: kid })
+      .setProtectedHeader({ alg: keyPrivateJose.alg!, typ: 'JWT', kid: kid })
       .setSubject(subjectId)
       .setIssuedAt()
-      .setIssuer(issuer)
+      .setIssuer(issuer!)
       .setExpirationTime('365d')
       .setJti(cryptoRandomString({ length: 16, type: 'alphanumeric' }));
 

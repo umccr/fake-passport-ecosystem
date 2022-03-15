@@ -2,12 +2,13 @@ import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import favicon from 'serve-favicon';
-import { errorMiddleware } from './middlewares/error.middleware';
+import { errorMiddleware } from '../common/middlewares/error.middleware';
 import path from 'path';
 import cryptoRandomString from 'crypto-random-string';
-import { DynamoDBAdapter } from './business/db/oidc-provider-dynamodb-adapter';
+import { DynamoDBAdapter } from '../common/business/db/oidc-provider-dynamodb-adapter';
 import { jsbn, pki } from 'node-forge';
 import base64url from 'base64url';
+import { makePrivateRsaJwk } from '../common/business/crypto/make-keys';
 
 const pugView = `
 doctype html
@@ -33,7 +34,7 @@ export class AppControl {
     this.env = process.env.NODE_ENV || 'development';
 
     // we want the favicon middleware to serve this first, so it avoids any logging - as it is irrelevant to us
-    this.app.use(favicon(path.join(__dirname, 'favicon.ico')));
+    // TODO: reenable for ESM this.app.use(favicon(path.join(__dirname, 'favicon.ico')));
     this.app.use(helmet.hidePoweredBy());
 
     morgan.token('res-headers', (req, res) => {
@@ -47,35 +48,13 @@ export class AppControl {
       return res.send('Top');
     });
 
-    const makeKey = () => {
-      return new Promise((resolve, reject) => {
-        pki.rsa.generateKeyPair({ bits: 2048, workers: 2 }, (err, keypair) => {
-          if (err) reject(err);
-
-          resolve(keypair);
-        });
-      });
-    };
-
-
-
     this.app.post('/create', async (req, res) => {
       const id = cryptoRandomString({ length: 16, characters: 'bcdfghjkmnpqrstvwyz' });
 
-      const rsaKey: any = await makeKey();
-      const jwksKey = {
-        d: base64url(Buffer.from(rsaKey.privateKey.d.toByteArray())),
-        dp: base64url(Buffer.from(rsaKey.privateKey.dP.toByteArray())),
-        dq: base64url(Buffer.from(rsaKey.privateKey.dQ.toByteArray())),
-        e: base64url(Buffer.from(rsaKey.privateKey.e.toByteArray())),
-        kty: 'RSA',
-        n: base64url(Buffer.from(rsaKey.privateKey.n.toByteArray())),
-        p: base64url(Buffer.from(rsaKey.privateKey.p.toByteArray())),
-        q: base64url(Buffer.from(rsaKey.privateKey.q.toByteArray())),
-        qi: base64url(Buffer.from(rsaKey.privateKey.qInv.toByteArray())),
-        use: 'sig',
-      };
+      const jwksKey = await makePrivateRsaJwk();
 
+      /*
+      TODO: from the parameters passed into this API - we construct a fixture
       await new DynamoDBAdapter('Fixture').createFixture(
         id,
         {
@@ -92,8 +71,9 @@ export class AppControl {
           },
         },
         3600,
-      );
+      ); */
 
+      // TODO: return enough data from the API call for clients to simulate a flow (app client id etc?)
       return res.send(`<p>${id}</p>`);
     });
 

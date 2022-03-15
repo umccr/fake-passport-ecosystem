@@ -2,7 +2,7 @@ import {CfnParameter, Duration, RemovalPolicy} from "aws-cdk-lib";
 import {AttributeType, BillingMode, ProjectionType, Table,} from "aws-cdk-lib/aws-dynamodb";
 import {Construct} from "constructs";
 import {EcrBasedLambdaFunction} from "./ecr-based-lambda-function";
-import {AppEnvName} from "../../backend/src/app-env";
+import {AppEnvName} from "../../backend/src/common/app-env";
 import {WebsiteApiGateway} from "./website-api-gateway";
 import {NodeJsLocalLambdaFunction} from "./nodejs-local-lambda-function";
 

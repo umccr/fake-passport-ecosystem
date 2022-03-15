@@ -1,0 +1,11 @@
+doctype html
+html(lang="en")
+    head
+        title= pageTitle
+    body
+        h1 Broker
+        #container.col
+            p.
+                I am a GA4GH broker with id #{brokerId}.
+            p.
+                If present, the subject that will always auto login for this broker = #{fixture.loginStage.forceSubject}

@@ -5,7 +5,7 @@ import {Repository} from "aws-cdk-lib/aws-ecr";
 import {ManagedPolicy, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
 import {LambdaTarget} from "aws-cdk-lib/aws-elasticloadbalancingv2-targets";
 
-export interface EcrBasedLambdaFunctionProps {
+interface Props {
     /**
      * The location of the lambda code in ECR - this must be in the same account as the deployed lambda
      */
@@ -47,7 +47,7 @@ export interface EcrBasedLambdaFunctionProps {
 export class EcrBasedLambdaFunction extends Construct {
     public readonly function: Function;
 
-    constructor(parent: Construct, name: string, props: EcrBasedLambdaFunctionProps) {
+    constructor(parent: Construct, name: string, props: Props) {
         super(parent, name);
 
         const ecrImage = EcrImageCode.fromEcrImage(

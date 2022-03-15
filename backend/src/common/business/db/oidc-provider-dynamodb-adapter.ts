@@ -15,9 +15,9 @@
  *                Index Name: userCodeIndex
  *                Partition Key: userCode
  *
- * 2. Put the Table's name in environment variable OAUTH_TABLE or simply replace the value of constant TABLE_NAME below.
+ * 2. Put the Table's name in environment variable TABLE_NAME.
  *
- * 3. You'll also need to change value of TABLE_REGION constant below if you aren't in AWS compute environment or if DynamoDB Table exists in different region.
+ * 3. Your environment will need to have an AWS_REGION set.
  *
  * 4. If you are in AWS' compute environment, nothing more needs to be changed in code.
  *    You just need to give proper IAM permissions of DynamoDB Table.
@@ -52,7 +52,12 @@ import {
   BatchWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { getMandatoryEnv } from '../../app-env';
+import { FixturePayload } from "../fixture-payload";
 
+/**
+ * A single-table Dynamo adapter for use by the Node OIDC provider (and ancillary
+ * data used by the AAI Test Bed)
+ */
 export class DynamoDBAdapter implements Adapter {
   name: string;
   tableName: string;
@@ -60,21 +65,27 @@ export class DynamoDBAdapter implements Adapter {
 
   /**
    * Construct an adapter for a certain type of data
+   *
    * @param name the name of the type of data being adapted (Fixture, Grant, Session etc) - prefixes all dynamo partition keys
    */
   constructor(name: string) {
     this.name = name;
+
+    // this gets set in the environment of the lambda to a CDK created table - but if running locally
+    // will need to be set to an already created table (see .env)
     this.tableName = getMandatoryEnv('TABLE_NAME');
+
+    // note: this needs an AWS_REGION set - which is fine when running in a lambda but will need it set
+    // in the environment if running outside AWS (see .env)
     this.client = new DynamoDBClient({});
   }
 
-  private static expiresInToExpiresAt(expiresIn?: number): number|null {
+  private static expiresInToExpiresAt(expiresIn?: number): number | null {
     return expiresIn ? Math.floor(Date.now() / 1000) + expiresIn : null;
   }
 
-  async createFixture(id: string, payload: any, expiresIn?: number): Promise<void> {
-    if(this.name != 'Fixture')
-      throw new Error("Fixture methods can only be used on a Fixture adapter");
+  async createFixture(id: string, payload: FixturePayload, expiresIn?: number): Promise<void> {
+    if (this.name != 'Fixture') throw new Error('Fixture methods can only be used on a Fixture adapter');
 
     try {
       const docClient = DynamoDBDocumentClient.from(this.client, { marshallOptions: { removeUndefinedValues: true } });
@@ -84,12 +95,10 @@ export class DynamoDBAdapter implements Adapter {
       const params: UpdateCommandInput = {
         TableName: this.tableName,
         Key: { modelId: this.name + '-' + id },
-        UpdateExpression:
-            'SET payload = :payload' +
-            (expiresAt ? ', expiresAt = :expiresAt' : ''),
+        UpdateExpression: 'SET payload = :payload' + (expiresAt ? ', expiresAt = :expiresAt' : ''),
         ExpressionAttributeValues: {
           ':payload': payload,
-          ...(expiresAt ? { ':expiresAt': expiresAt } : {})
+          ...(expiresAt ? { ':expiresAt': expiresAt } : {}),
         },
       };
 
@@ -98,12 +107,10 @@ export class DynamoDBAdapter implements Adapter {
       console.log(e);
       throw e;
     }
-
   }
 
-  async findFixture(id: string): Promise<any|undefined> {
-    if(this.name != 'Fixture')
-      throw new Error("Fixture methods can only be used on a Fixture adapter");
+  async findFixture(id: string): Promise<FixturePayload | undefined> {
+    if (this.name != 'Fixture') throw new Error('Fixture methods can only be used on a Fixture adapter');
 
     try {
       const docClient = DynamoDBDocumentClient.from(this.client);
@@ -114,7 +121,7 @@ export class DynamoDBAdapter implements Adapter {
         ProjectionExpression: 'payload, expiresAt',
       };
 
-      const result = <{ payload: any; expiresAt?: number } | undefined>(await docClient.send(new GetCommand(params))).Item;
+      const result = <{ payload: FixturePayload; expiresAt?: number } | undefined>(await docClient.send(new GetCommand(params))).Item;
 
       // DynamoDB can take upto 48 hours to drop expired items, so a check is required
       if (!result || (result.expiresAt && Date.now() > result.expiresAt * 1000)) {
@@ -127,8 +134,6 @@ export class DynamoDBAdapter implements Adapter {
       throw e;
     }
   }
-
-
 
   async upsert(id: string, payload: AdapterPayload, expiresInSeconds?: number): Promise<void> {
     try {
@@ -299,13 +304,14 @@ export class DynamoDBAdapter implements Adapter {
         return;
       }
 
-      const batchWriteParams: BatchWriteCommandInput = {
-        RequestItems: {
-          [this.tableName]: items.reduce((acc, item) => [...acc, { DeleteRequest: { Key: { modelId: item.modelId } } }], []),
-        },
-      };
+      //TODO: restore func
+      // const batchWriteParams: BatchWriteCommandInput = {
+      //  RequestItems: {
+      //    [this.tableName]: items.reduce((acc, item) => [...acc, { DeleteRequest: { Key: { modelId: item.modelId } } }], []),
+      //  },
+      //};
 
-      await docClient.send(new BatchWriteCommand(batchWriteParams));
+      //await docClient.send(new BatchWriteCommand(batchWriteParams));
     } while (ExclusiveStartKey);
   }
 }
