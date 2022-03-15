@@ -1,8 +1,9 @@
 import { AppBroker } from './app-broker/app-broker';
 import NodeCache from 'node-cache';
 import serverlessExpress from '@vendia/serverless-express';
-import { DynamoDBAdapter } from './common/business/db/oidc-provider-dynamodb-adapter';
 import { AppControl } from './app-control/app-control';
+import { getFixture } from "./common/business/fixture-payload";
+import { getMandatoryEnv } from "./common/app-env";
 
 const appCache = new NodeCache({ useClones: false, checkperiod: 0, stdTTL: 0, maxKeys: 1000 });
 
@@ -22,8 +23,8 @@ const shorterStringReplacer = (key: string, value: string): string => {
  */
 export const handler = async (ev: any, context: any) => {
   //
-  // BEWARE - THIS ENTRYPOINT IS EXPOSED TO THE INTERNET (i.e the internet can craft incoming
-  // HTTP requests saying anything) - SO WE CHECK AND DOUBLE CHECK THE VALIDITY OF ALL INFORMATION
+  // BEWARE - THIS ENTRYPOINT IS EXPOSED TO THE INTERNET (i.e. the internet can craft incoming
+  // HTTP requests saying anything) - SO WE CHECK AND DOUBLE-CHECK THE VALIDITY OF ALL INFORMATION
   //
 
   // if coming into endpoint "https://abcd.aai.host.org", the prefix is "abcd" - and is the selector we use to
@@ -65,9 +66,7 @@ export const handler = async (ev: any, context: any) => {
   if (!appCache.has(domainPrefix)) {
     cacheMiss = true;
 
-    const adapter = new DynamoDBAdapter('Fixture');
-
-    const fixturePayload = await adapter.findFixture(domainPrefix);
+    const fixturePayload = await getFixture(domainPrefix);
 
     if (!fixturePayload) {
       console.log(`Lambda Request no record found for ${domainPrefix} - `, JSON.stringify(ev, shorterStringReplacer));
@@ -79,7 +78,7 @@ export const handler = async (ev: any, context: any) => {
       };
     }
 
-    const newApp = new AppBroker(domainPrefix, fixturePayload);
+    const newApp = new AppBroker(domainPrefix, getMandatoryEnv("DOMAIN_NAME"), fixturePayload);
 
     appCache.set(domainPrefix, newApp);
   }
