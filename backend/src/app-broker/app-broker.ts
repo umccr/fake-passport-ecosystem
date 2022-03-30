@@ -1,14 +1,23 @@
 import express from 'express';
 import { errorMiddleware } from '../common/middlewares/error.middleware';
-import { Account, Configuration, KoaContextWithOIDC, Provider, UnknownObject } from 'oidc-provider';
-import { DynamoDBAdapter } from '../common/business/db/oidc-provider-dynamodb-adapter';
-import _ from 'lodash';
-import { makeJwtVisaSigned } from './business/services/visa/make-visa';
-import { keyDefinitions } from './business/services/visa/keys';
-import { FixturePayload } from '../common/business/fixture-payload';
-import { renderLoginPage } from './pages/login/login';
-import { renderHomePage } from './pages/home/home';
+import {
+  Account,
+  AccountClaims,
+  CanBePromise,
+  Configuration,
+  KoaContextWithOIDC,
+  Provider,
+  UnknownObject
+}                                                                   from 'oidc-provider';
+import { DynamoDBAdapter }                                          from '../common/business/db/oidc-provider-dynamodb-adapter';
+import _                                                            from 'lodash';
+import { makeJwtVisaSigned }                                        from './business/services/visa/make-visa';
+import { keyDefinitions }                                           from './business/services/visa/keys';
+import { FixturePayload }                                           from '../common/business/fixture-payload';
+import { renderLoginPage }                                          from './pages/login/login';
+import { renderHomePage }                                           from './pages/home/home';
 import { loggingMiddleware, parseMiddleware, setNoCacheMiddleware } from '../common/middlewares/util.middleware';
+import {ScenarioUser}                                        from "../common/business/scenario/scenario-data";
 
 /**
  * An express app wrapper that acts as a simulated GA4GH passport broker. The broker
@@ -49,6 +58,7 @@ export class AppBroker {
 
     // register our interaction endpoints
     this.app.get(AppBroker.getInteractionRoute(null), setNoCacheMiddleware, (req, res, next) => this.handleInteraction(req, res, next));
+
     this.app.post(AppBroker.getInteractionRoute(null, 'login'), setNoCacheMiddleware, parseMiddleware, (req, res, next) =>
       this.handleInteractionLoginPostAction(req, res, next),
     );
@@ -161,7 +171,7 @@ export class AppBroker {
       // post-processing
       //  since internal route matching was already executed you may target a specific action here
       //  checking `ctx.oidc.route`, the unique route names used are
-      //        
+      //
       //  `authorization`
       //  `backchannel_authentication`
       //  `client_delete`
@@ -190,7 +200,7 @@ export class AppBroker {
       //  `revocation`
       //  `token`
       //  `userinfo`
-      //  
+      //
       console.log('post middleware', ctx?.method, ctx?.oidc?.route);
     }); */
 
@@ -293,7 +303,6 @@ export class AppBroker {
     const loginResult = {
       login: { accountId: user, remember: false },
     };
-
     await this.provider.interactionFinished(req, res, loginResult, { mergeWithLastSubmission: false });
   }
 
@@ -358,44 +367,85 @@ export class AppBroker {
   private async findAccount(ctx: KoaContextWithOIDC, sub: string): Promise<Account | undefined> {
     // @param token - is a reference to the token used for which a given account is being loaded,
     //   is undefined in scenarios where claims are returned from authorization endpoint
+    const user = this.fixture.scenario?.getUserById(sub);
+
+    if (!user) {
+      return;
+    }
+
+    const visas = await this.generateVisas(user);
+
     return {
       accountId: sub,
-      // @param use {string} - can either be "id_token" or "userinfo", depending on
-      //   where the specific claims are intended to be put in
-      // @param scope {string} - the intended scope, while oidc-provider will mask
-      //   claims depending on the scope automatically you might want to skip
-      //   loading some claims from external resources or through db projection etc. based on this
-      //   detail or not return them in ID Tokens but only UserInfo and so on
-      // @param claims {object} - the part of the claims authorization parameter for either
-      //   "id_token" or "userinfo" (depends on the "use" param)
-      // @param rejected {Array[String]} - claim names that were rejected by the end-user, you might
-      //   want to skip loading some claims from external resources or through db projection
       claims: async (use, scope, claims, rejected) => {
         return {
           sub: sub,
-          // TODO: this obviously need to be dynamic based on the fixture/scenario
-          ga4gh_passport_v1: [
-            await makeJwtVisaSigned(
-              keyDefinitions,
-              'https://dac.madeup.com.au',
-              'rfc-rsa',
-              sub,
-              { days: 90 },
-              {
-                ga4gh_visa_v1: {
-                  type: 'ControlledAccessGrants',
-                  // this should be the date of approval..
-                  asserted: 1549632872,
-                  value: 'asdad',
-                  source: 'software system',
-                  by: 'dac',
-                },
-              },
-            ),
-          ],
+          ga4gh_passport_v1: visas
         };
       },
-    };
+    }
+  }
+
+  private async generateVisas(user: ScenarioUser, isLinkedAccount: boolean = false): Promise<any> {
+      const {sub, roles} = user
+      const visas = []
+
+      if (roles.dataset) {
+          const controlledAccessVisa = await AppBroker.generateVisa(sub, 'ControlledAccessGrants', roles.dataset.approvedAt, roles.dataset.dataset)
+          visas.push(controlledAccessVisa)
+      }
+
+      if (roles.institution) {
+          const affiliationAndRoleVisa = await AppBroker.generateVisa(sub, 'AffiliationAndRole', Date.now(), roles.institution)
+          visas.push(affiliationAndRoleVisa)
+      }
+
+      if (roles.termsAndPolicies) {
+          const acceptedTermsAndPoliciesVisa = await AppBroker.generateVisa(sub, 'AcceptedTermsAndPoliciesVisa', Date.now(), 'true')
+          visas.push(acceptedTermsAndPoliciesVisa)
+      }
+
+      if (roles.researcherStatus) {
+          const researcherStatusVisa = await AppBroker.generateVisa(sub, 'ResearcherStatus', Date.now(), roles.researcherStatus)
+          visas.push(researcherStatusVisa)
+      }
+
+      if (roles.linkedIdentity && !isLinkedAccount) {
+          const linkedUser = this.fixture.scenario?.getUserById(roles.linkedIdentity)
+          // is this the right way to go with linked identities? generate all visas for all linked identities
+          if (linkedUser) {
+              const linkedVisas = await this.generateVisas(linkedUser, true)
+              linkedVisas.forEach((linkedVisa: any) => {
+                  visas.push(linkedVisa)
+              })
+          }
+          // then generate linked identity visa
+          const linkedIdentityVisa = await AppBroker.generateVisa(sub, 'LinkedIdentities', Date.now(), roles.linkedIdentity)
+          visas.push(linkedIdentityVisa)
+      }
+
+      return visas
+  }
+
+  private static async generateVisa(sub: string, type: string, asserted: number, value: string): Promise<any> {
+      const issuer = 'https://dac.madeup.com.au'
+      const kid = 'rfc-rsa'
+      return await makeJwtVisaSigned(
+          keyDefinitions,
+          issuer,
+          kid,
+          sub,
+          { days: 90 },
+          {
+              ga4gh_visa_v1: {
+                  type,
+                  asserted,
+                  value,
+                  source: 'software system',
+                  by: 'dac',
+              },
+          },
+      )
   }
 
   /**
