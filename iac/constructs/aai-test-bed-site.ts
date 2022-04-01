@@ -1,15 +1,18 @@
-import {CfnParameter, Duration, RemovalPolicy} from "aws-cdk-lib";
-import {AttributeType, BillingMode, ProjectionType, Table,} from "aws-cdk-lib/aws-dynamodb";
-import {Construct} from "constructs";
-import {EcrBasedLambdaFunction} from "./ecr-based-lambda-function";
-import {AppEnvName} from "../../backend/src/common/app-env";
-import {WebsiteApiGateway} from "./website-api-gateway";
-import {NodeJsLocalLambdaFunction} from "./nodejs-local-lambda-function";
+import { CfnParameter, Duration, RemovalPolicy } from "aws-cdk-lib";
+import {
+  AttributeType,
+  BillingMode,
+  ProjectionType,
+  Table,
+} from "aws-cdk-lib/aws-dynamodb";
+import { Construct } from "constructs";
+import { AppEnvName } from "../../backend/src/common/app-env";
+import { WebsiteApiGateway } from "./website-api-gateway";
+import { NodeJsLocalLambdaFunction } from "./nodejs-local-lambda-function";
 
 interface Props {
   semanticVersionParam: CfnParameter;
   deployedEnvironmentParam: CfnParameter;
-  lambdaRepoNameParam: CfnParameter;
 
   albCertificateArnParam: CfnParameter;
   albNameHostParam: CfnParameter;
@@ -26,15 +29,15 @@ export class AaiTestBedSite extends Construct {
   constructor(parent: Construct, name: string, props: Props) {
     super(parent, name);
 
-    const oidcProviderTable = this.addOidcProviderTable()
+    const oidcProviderTable = this.addOidcProviderTable();
 
-    const htmlFunctionRole = EcrBasedLambdaFunction.generateLambdaRole(
+    const functionRole = NodeJsLocalLambdaFunction.generateLambdaRole(
       this,
-      "HtmlFunctionRole",
+      "ApiFunctionRole",
       []
     );
 
-    oidcProviderTable.grantReadWriteData(htmlFunctionRole);
+    oidcProviderTable.grantReadWriteData(functionRole);
 
     // because it is vital that the names we use here for env variables are consistent into the backends
     // we use a shared type definition AppEnvName
@@ -43,25 +46,19 @@ export class AaiTestBedSite extends Construct {
       SEMANTIC_VERSION: props.semanticVersionParam.valueAsString,
       NODE_ENV: props.deployedEnvironmentParam.valueAsString,
       TABLE_NAME: oidcProviderTable.tableName,
-      DOMAIN_NAME: props.albNameDomainParam.valueAsString
+      DOMAIN_NAME: props.albNameDomainParam.valueAsString,
     };
 
-    const functionConstruct = new EcrBasedLambdaFunction(this, "HtmlFunction", {
-      lambdaRole: htmlFunctionRole,
-      lambdaRepoNameParam: props.lambdaRepoNameParam.valueAsString,
-      lambdaCmd: ["bootstrap-lambda.handler"],
-      lambdaRepoTag: props.build,
-      environmentVariables: envs,
-      duration: Duration.minutes(1),
-      memorySize: 2048
-    });
-
-    // we will pivot to this when a bug in esbuild is fixed
-    //const functionConstruct = new NodeJsLocalLambdaFunction(this, "HtmlFunction", {
-    //  lambdaRole: htmlFunctionRole,
-    //  environmentVariables: envs,
-    //  duration: Duration.minutes(1),
-    //});
+    const functionConstruct = new NodeJsLocalLambdaFunction(
+      this,
+      "ApiFunction",
+      {
+        lambdaRole: functionRole,
+        environmentVariables: envs,
+        duration: Duration.minutes(1),
+        memorySize: 2048,
+      }
+    );
 
     const apiGateway = new WebsiteApiGateway(this, "ApiGateway", {
       certificateArn: props.albCertificateArnParam.valueAsString,
@@ -83,7 +80,7 @@ export class AaiTestBedSite extends Construct {
       billingMode: BillingMode.PAY_PER_REQUEST,
       removalPolicy: RemovalPolicy.DESTROY,
       partitionKey: { name: "modelId", type: AttributeType.STRING },
-      timeToLiveAttribute: 'expiresAt'
+      timeToLiveAttribute: "expiresAt",
     });
 
     t.addGlobalSecondaryIndex({
