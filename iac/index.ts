@@ -23,23 +23,17 @@ class AaiTestBedStack extends Stack {
       {
         type: "String",
         description:
-          "The environment setting to use throughout backend (NODE_ENV) and frontend (EnvRelayProvider.deployedEnvironment)",
+          "The environment setting to use throughout backend (NODE_ENV)",
         allowedValues: ["production", "development"],
         default: "development",
       }
     );
-
-    const lambdaRepoNameParam = new CfnParameter(this, "ECRName", {
-      type: "String",
-      description: `ECR repository name holding the lambda images for the site (must be in same account as deployment - must use the image tagged ${build})`,
-    });
 
     const siteParameterGroup = {
       Label: { default: "Site Settings" },
       Parameters: [
         semanticVersionParam.logicalId,
         deployedEnvironmentParam.logicalId,
-        lambdaRepoNameParam.logicalId,
       ],
     };
 
@@ -96,7 +90,6 @@ class AaiTestBedStack extends Stack {
     new AaiTestBedSite(this, "Web", {
       semanticVersionParam,
       deployedEnvironmentParam,
-      lambdaRepoNameParam,
       albCertificateArnParam,
       albNameHostParam,
       albNameDomainParam,

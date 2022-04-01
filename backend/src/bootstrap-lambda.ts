@@ -1,12 +1,47 @@
-import { AppBroker } from './app-broker/app-broker';
-import NodeCache from 'node-cache';
 import serverlessExpress from '@vendia/serverless-express';
+import NodeCache from 'node-cache';
+import { AppBroker } from './app-broker/app-broker';
 import { AppControl } from './app-control/app-control';
-import { getFixture } from "./common/business/fixture-payload";
-import { getMandatoryEnv } from "./common/app-env";
+import { getFixture } from './common/business/fixture-payload';
+import { getMandatoryEnv } from './common/app-env';
 
-const appCache = new NodeCache({ useClones: false, checkperiod: 0, stdTTL: 0, maxKeys: 1000 });
+///
+/// THE LAMBDA ENTRY POINT - THIS NEEDS TO SETUP/CACHE THE CORRECT
+/// EXPRESS SERVER DEPENDING ON THE URL
+///
 
+/**
+ * Whilst the prefix of our URL is dynamic - the ending of the domain
+ * is fixed and set by the outer environment variables.
+ */
+const domainName = getMandatoryEnv('DOMAIN_NAME');
+
+/**
+ * This NodeCache is retained between Lambda calls and stores Express instances
+ * for a given DNS name. This cache has a limited lifetime because the
+ * lambda itself will eventually (1hr?) be recycled. But it gives us some
+ * benefit when there is lots of activity across a small set of DNS names
+ */
+const appCache = new NodeCache({
+  useClones: false,
+  // we set up to cache express instances for the lifetime of the lambda
+  checkperiod: 0,
+  stdTTL: 0,
+  // I suppose there is some sort of DOS attack that might involve sending
+  // us loads of traffic across a variety of DNS endpoints - and we might hit
+  // this - though I think 'failing' at that point is probably a good result -
+  // but we possibly should revisit this number/technique
+  maxKeys: 1000,
+});
+
+/**
+ * A JSON.stringify replacer() implementation - we print some useful
+ * debug info of our input/output from the Lambda - but
+ * we make sure any individual string field is truncated if too long.
+ *
+ * @param key
+ * @param value
+ */
 const shorterStringReplacer = (key: string, value: string): string => {
   if (typeof value === 'string') {
     if (value.length > 256) return value.substr(0, 256) + '... truncated ...';
@@ -16,7 +51,8 @@ const shorterStringReplacer = (key: string, value: string): string => {
 
 /**
  * Our lambda is the entrypoint for a variety of Express web servers - all potentially
- * constructed dynamically (i.e not fixed domain names).
+ * constructed dynamically (i.e. we are not sitting on a fixed domain name and the
+ * functionality we serve up depends on the name).
  *
  * @param ev
  * @param context
@@ -31,8 +67,11 @@ export const handler = async (ev: any, context: any) => {
   // identify which Express instance to use
   const domainPrefix: string = ev?.requestContext?.domainPrefix || '';
 
-  // we know the dynamic domain names we are going to create are all in this regex range - so we can be super
+  // we know the dynamic domain prefix names we are going to create are all in this regex range - so we can be super
   // tight on insuring the inputs match
+
+  // at least 1 leading letter
+  // then letters/numbers and any special chars we are happy to accept ('-' etc)
   const domainWhitelistMatch = domainPrefix.match(/^[a-zA-Z][a-zA-Z0-9\-]*$/);
 
   // abort out if domain feels funny
@@ -78,7 +117,7 @@ export const handler = async (ev: any, context: any) => {
       };
     }
 
-    const newApp = new AppBroker(domainPrefix, getMandatoryEnv("DOMAIN_NAME"), fixturePayload);
+    const newApp = new AppBroker(domainPrefix, domainName, fixturePayload);
 
     appCache.set(domainPrefix, newApp);
   }

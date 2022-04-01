@@ -90,7 +90,7 @@ export class WebsiteApiGateway extends Construct {
       target: recordTarget,
     });
 
-    // ok - the mapping always causes trouble - I think that is has an explict
+    // ok - the mapping always causes trouble - I think that is has an explicit
     // dependency already on apiGateway and dn - but we get random failures
     // to create the stack
     // WebBrokerApiGatewayMapping93BD2258	CREATE_FAILED	Invalid domain name identifier specified
