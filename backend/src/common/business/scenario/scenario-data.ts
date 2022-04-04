@@ -1,7 +1,8 @@
 export interface ScenarioUser {
   sub: string;
   name: string;
-  roles: Roles
+  roles: Roles;
+  expectedVisas: string[];
   // claims: any[];
 }
 

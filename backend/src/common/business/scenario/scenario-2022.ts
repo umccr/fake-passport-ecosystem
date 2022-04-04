@@ -1,9 +1,8 @@
 import {ScenarioData, ScenarioUser} from './scenario-data';
 
 export class Scenario2022 extends ScenarioData {
-
     private users: { [key: string]: ScenarioUser } = {
-        'http://uid.org/0': { // no visas generated
+        'http://uid.org/0': {
             sub: 'http://uid.org/0',
             name: 'Ted Lasso',
             roles: {
@@ -12,9 +11,12 @@ export class Scenario2022 extends ScenarioData {
                 linkedIdentity: null,
                 termsAndPolicies: false,
                 researcherStatus: null
-            }
+            },
+            expectedVisas: [
+
+            ]
         },
-        'http://uid.org/1': { // controlledAccessGrant + TOC visa
+        'http://uid.org/1': {
             sub: 'http://uid.org/1',
             name: 'Tony Stark',
             roles: {
@@ -26,9 +28,13 @@ export class Scenario2022 extends ScenarioData {
                 linkedIdentity: null,
                 termsAndPolicies: true,
                 researcherStatus: null
-            }
+            },
+            expectedVisas: [
+                'ControlledAccessGrant',
+                'AcceptedTermsAndPoliciesVisa'
+            ]
         },
-        'http://uid.org/2': { // AffiliationAndRoleVisa + TOC
+        'http://uid.org/2': {
             sub: 'http://uid.org/2',
             name: 'Mary Jones',
             roles: {
@@ -37,9 +43,12 @@ export class Scenario2022 extends ScenarioData {
                 linkedIdentity: null,
                 termsAndPolicies: true,
                 researcherStatus: null
-            }
+            },
+            expectedVisas: [
+                'AffiliationAndRole',
+                'AcceptedTermsAndPoliciesVisa'
+            ]
         },
-        // linked identities (either will generate linkedIdentityVisa, terms and policies visa (x2) and researcherStatus visa)
         'http://uid.org/3': {
             sub: 'http://uid.org/3',
             name: 'Bruce Smith',
@@ -49,7 +58,13 @@ export class Scenario2022 extends ScenarioData {
                 linkedIdentity: 'http://uid.org/4',
                 termsAndPolicies: true,
                 researcherStatus: null
-            }
+            },
+            expectedVisas: [
+                'LinkedIdentities',
+                'AcceptedTermsAndPoliciesVisa',
+                'AcceptedTermsAndPoliciesVisa',
+                'ResearcherStatus'
+            ]
         },
         'http://uid.org/4': {
             sub: 'http://uid.org/4',
@@ -60,9 +75,15 @@ export class Scenario2022 extends ScenarioData {
                 linkedIdentity: 'http://uid.org/3',
                 termsAndPolicies: true,
                 researcherStatus: 'clinician'
-            }
+            },
+            expectedVisas: [
+                'LinkedIdentities',
+                'AcceptedTermsAndPoliciesVisa',
+                'AcceptedTermsAndPoliciesVisa',
+                'ResearcherStatus'
+            ]
         },
-        'http://uid.org/5': { // ResearcherStatus visa + toc visa
+        'http://uid.org/5': {
             sub: 'http://uid.org/5',
             name: 'Thor',
             roles: {
@@ -71,7 +92,11 @@ export class Scenario2022 extends ScenarioData {
                 linkedIdentity: null,
                 termsAndPolicies: true,
                 researcherStatus: 'researcher'
-            }
+            },
+            expectedVisas: [
+                'AcceptedTermsAndPoliciesVisa',
+                'ResearcherStatus'
+            ]
         },
     }
 
