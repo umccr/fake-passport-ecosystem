@@ -5,7 +5,7 @@ import { DynamoDBClient, ScanCommand, ScanInput } from '@aws-sdk/client-dynamodb
 import { getMandatoryEnv } from '../common/app-env';
 import { DeleteCommand } from '@aws-sdk/lib-dynamodb';
 
-const dbClient = new DynamoDBClient({region: 'ap-southeast-2', endpoint: 'http://localhost:8000'});
+const dbClient = new DynamoDBClient({});
 
 /**
  * Gets all the data from a (presumably small) test table in anticipation of deleting it all.
