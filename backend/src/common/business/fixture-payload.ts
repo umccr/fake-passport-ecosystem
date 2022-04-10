@@ -1,7 +1,8 @@
-import { JWKS } from "oidc-provider";
-import { ScenarioData } from "./scenario/scenario-data";
+import { JWKS }            from "oidc-provider";
+import { ScenarioData }    from "./scenario/scenario-data";
 import { DynamoDBAdapter } from "./db/oidc-provider-dynamodb-adapter";
-import { getScenario } from "./scenario/scenario";
+import { getScenario }     from "./scenario/scenario";
+import {ScenarioErrors}    from "../../app-control/app-control";
 
 /**
  * The mechanism by which we should fetch fixture data. Note that we do
@@ -30,15 +31,17 @@ export async function getFixture(fixtureId: string): Promise<FixturePayload> {
  * state and behaviour of the broker.
  */
 export interface FixturePayload {
-  scenarioId: string,
+  scenarioId: string;
 
-  scenario?: ScenarioData,
+  scenario?: ScenarioData;
 
   loginStage: LoginStage;
 
-  consentStage: ConsentStage
+  consentStage: ConsentStage;
 
   providerRaw: OidcProviderRaw;
+
+  introduceErrors?: ScenarioErrors;
 }
 
 /**

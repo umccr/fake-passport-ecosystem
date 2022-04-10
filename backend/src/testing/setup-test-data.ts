@@ -5,7 +5,7 @@ import { DynamoDBClient, ScanCommand, ScanInput } from '@aws-sdk/client-dynamodb
 import { getMandatoryEnv } from '../common/app-env';
 import { DeleteCommand } from '@aws-sdk/lib-dynamodb';
 
-const dbClient = new DynamoDBClient({});
+const dbClient = new DynamoDBClient({region: 'ap-southeast-2', endpoint: 'http://localhost:8000'});
 
 /**
  * Gets all the data from a (presumably small) test table in anticipation of deleting it all.
@@ -70,7 +70,6 @@ export async function setupTestData(): Promise<string> {
   const allRecords = await getAllRecords(tableName);
 
   for (const item of allRecords) {
-    // console.log(`Deleting ${JSON.stringify(item)}`);
     await dbClient.send(
       new DeleteCommand({
         TableName: tableName,
@@ -92,7 +91,7 @@ export async function setupTestData(): Promise<string> {
   await new DynamoDBAdapter('Fixture').createFixture(
     id,
     {
-      scenarioId: "2022",
+      scenarioId: 'error',
       providerRaw: {
         clients: [
           {
@@ -112,6 +111,13 @@ export async function setupTestData(): Promise<string> {
       },
       consentStage: {
         forceAccept: true
+      },
+      introduceErrors: {
+        expiredPassport: false,
+        expiredVisa: true,
+        invalidJwtAlgorithm: false,
+        invalidPassportSignature: false,
+        invalidVisaSignature: true
       }
     },
     3600,

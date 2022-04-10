@@ -17,7 +17,9 @@ import { FixturePayload }                                           from '../com
 import { renderLoginPage }                                          from './pages/login/login';
 import { renderHomePage }                                           from './pages/home/home';
 import { loggingMiddleware, parseMiddleware, setNoCacheMiddleware } from '../common/middlewares/util.middleware';
-import {ScenarioUser}                                        from "../common/business/scenario/scenario-data";
+import {Roles, ScenarioUser}                                        from "../common/business/scenario/scenario-data";
+import {ScenarioErrors}                                             from "../app-control/app-control";
+import {ScenarioError}                                              from "../common/business/scenario/scenario-error";
 
 /**
  * An express app wrapper that acts as a simulated GA4GH passport broker. The broker
@@ -373,7 +375,7 @@ export class AppBroker {
       return;
     }
 
-    const visas = await this.generateVisas(user);
+    const visas = await this.generateVisas(user, false, this.fixture.introduceErrors);
 
     return {
       accountId: sub,
@@ -386,7 +388,7 @@ export class AppBroker {
     }
   }
 
-  private async generateVisas(user: ScenarioUser, isLinkedAccount: boolean = false): Promise<any> {
+  private async generateVisas(user: ScenarioUser, isLinkedAccount: boolean = false, introduceErrors: ScenarioErrors | undefined): Promise<any> {
       const {sub, roles} = user
       const visas = []
 
@@ -414,7 +416,7 @@ export class AppBroker {
           const linkedUser = this.fixture.scenario?.getUserById(roles.linkedIdentity)
           // is this the right way to go with linked identities? generate all visas for all linked identities
           if (linkedUser) {
-              const linkedVisas = await this.generateVisas(linkedUser, true)
+              const linkedVisas = await this.generateVisas(linkedUser, true, introduceErrors)
               linkedVisas.forEach((linkedVisa: any) => {
                   visas.push(linkedVisa)
               })
@@ -424,7 +426,29 @@ export class AppBroker {
           visas.push(linkedIdentityVisa)
       }
 
+      if (introduceErrors) {
+        const errors = await AppBroker.generateVisasWithError(introduceErrors)
+      }
+
       return visas
+  }
+
+  private static async generateVisasWithError(introduceErrors: ScenarioErrors): Promise<any> {
+    const visasWithErrors = []
+    const errorScenarioUsers = new ScenarioError().getUsers()
+    if (introduceErrors.invalidVisaSignature) {
+      const invalidVisaUser = errorScenarioUsers['invalidVisaSignature']
+      const errorVisa = await AppBroker.generateVisa(invalidVisaUser.sub, '', Date.now(), '')
+      visasWithErrors.push(errorVisa)
+    }
+
+    if (introduceErrors.expiredVisa) {
+      const expiredVisaUser = errorScenarioUsers['expiredVisa']
+      const errorVisa = await AppBroker.generateVisa(expiredVisaUser.sub, '', Date.now(), '')
+      visasWithErrors.push(errorVisa)
+    }
+
+    return visasWithErrors
   }
 
   private static async generateVisa(sub: string, type: string, asserted: number, value: string): Promise<any> {
