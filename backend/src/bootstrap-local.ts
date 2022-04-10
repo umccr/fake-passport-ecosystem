@@ -23,10 +23,10 @@ setupTestData().then(async (id: string) => {
     console.log('Started local broker on 3000');
 
     // until we start using control no need to start it
-    //const appControl = new AppControl();
+    const appControl = new AppControl();
 
-    //appControl.listen(3001, () => {
-    //  console.log('Started control on 3001');
-    //});
+    appControl.listen(3001, () => {
+      console.log('Started control on 3001');
+    });
   });
 });

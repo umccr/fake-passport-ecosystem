@@ -282,7 +282,7 @@ async function getNagimJwtVisas(subjectId: string, ldapPerson: any): Promise<str
         VISA_BROKER_ISSUER,
         'rfc-rsa',
         subjectId,
-        { days: 90 },
+        '90d',
         {
           ga4gh_visa_v1: {
             type: 'ResearcherStatus',

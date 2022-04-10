@@ -81,7 +81,7 @@ export async function makeJwtVisaSigned(
   issuer: string | null,
   kid: string,
   subjectId: string,
-  duration: Duration,
+  duration: string,
   claims: any,
 ): Promise<string> {
   const keyPrivateJose = keys[kid] as RsaJose;
@@ -111,7 +111,7 @@ export async function makeJwtVisaSigned(
       .setSubject(subjectId)
       .setIssuedAt()
       .setIssuer(issuer!)
-      .setExpirationTime('365d')
+      .setExpirationTime(duration)
       .setJti(cryptoRandomString({ length: 16, type: 'alphanumeric' }));
 
     const jwtVisa = await newJwtSigner.sign(rsaPrivateKey);

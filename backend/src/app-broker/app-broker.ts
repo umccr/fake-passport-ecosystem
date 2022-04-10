@@ -388,27 +388,27 @@ export class AppBroker {
     }
   }
 
-  private async generateVisas(user: ScenarioUser, isLinkedAccount: boolean = false, introduceErrors: ScenarioErrors | undefined): Promise<any> {
+  private async generateVisas(user: ScenarioUser, isLinkedAccount: boolean = false, introduceErrors: ScenarioErrors | undefined): Promise<string[]> {
       const {sub, roles} = user
       const visas = []
 
       if (roles.dataset) {
-          const controlledAccessVisa = await AppBroker.generateVisa(sub, 'ControlledAccessGrants', roles.dataset.approvedAt, roles.dataset.dataset)
+          const controlledAccessVisa = await AppBroker.generateVisa(sub, 'ControlledAccessGrants', roles.dataset.approvedAt, '90d', roles.dataset.dataset)
           visas.push(controlledAccessVisa)
       }
 
       if (roles.institution) {
-          const affiliationAndRoleVisa = await AppBroker.generateVisa(sub, 'AffiliationAndRole', Date.now(), roles.institution)
+          const affiliationAndRoleVisa = await AppBroker.generateVisa(sub, 'AffiliationAndRole', Date.now(), '90d', roles.institution)
           visas.push(affiliationAndRoleVisa)
       }
 
       if (roles.termsAndPolicies) {
-          const acceptedTermsAndPoliciesVisa = await AppBroker.generateVisa(sub, 'AcceptedTermsAndPoliciesVisa', Date.now(), 'true')
+          const acceptedTermsAndPoliciesVisa = await AppBroker.generateVisa(sub, 'AcceptedTermsAndPoliciesVisa', Date.now(), '90d', 'true')
           visas.push(acceptedTermsAndPoliciesVisa)
       }
 
       if (roles.researcherStatus) {
-          const researcherStatusVisa = await AppBroker.generateVisa(sub, 'ResearcherStatus', Date.now(), roles.researcherStatus)
+          const researcherStatusVisa = await AppBroker.generateVisa(sub, 'ResearcherStatus', Date.now(), '90d', roles.researcherStatus)
           visas.push(researcherStatusVisa)
       }
 
@@ -422,36 +422,50 @@ export class AppBroker {
               })
           }
           // then generate linked identity visa
-          const linkedIdentityVisa = await AppBroker.generateVisa(sub, 'LinkedIdentities', Date.now(), roles.linkedIdentity)
+          const linkedIdentityVisa = await AppBroker.generateVisa(sub, 'LinkedIdentities', Date.now(),'90d', roles.linkedIdentity)
           visas.push(linkedIdentityVisa)
       }
 
       if (introduceErrors) {
         const errors = await AppBroker.generateVisasWithError(introduceErrors)
+        errors.forEach((erroredOutVisa) => {
+          visas.push(erroredOutVisa)
+        })
       }
 
       return visas
   }
 
-  private static async generateVisasWithError(introduceErrors: ScenarioErrors): Promise<any> {
+  private static async generateVisasWithError(introduceErrors: ScenarioErrors): Promise<string[]> {
     const visasWithErrors = []
     const errorScenarioUsers = new ScenarioError().getUsers()
+
     if (introduceErrors.invalidVisaSignature) {
       const invalidVisaUser = errorScenarioUsers['invalidVisaSignature']
-      const errorVisa = await AppBroker.generateVisa(invalidVisaUser.sub, '', Date.now(), '')
-      visasWithErrors.push(errorVisa)
+      const visa = await AppBroker.generateVisa(invalidVisaUser.sub, '', Date.now(), '90d', '')
+      const visaWithInvalidSignature = AppBroker.invalidateSignature(visa)
+      visasWithErrors.push(visaWithInvalidSignature)
     }
 
     if (introduceErrors.expiredVisa) {
       const expiredVisaUser = errorScenarioUsers['expiredVisa']
-      const errorVisa = await AppBroker.generateVisa(expiredVisaUser.sub, '', Date.now(), '')
+      const errorVisa = await AppBroker.generateVisa(expiredVisaUser.sub, '', Date.now(), '0s', '') // this visa will expire on creation
       visasWithErrors.push(errorVisa)
     }
 
     return visasWithErrors
   }
 
-  private static async generateVisa(sub: string, type: string, asserted: number, value: string): Promise<any> {
+  private static invalidateSignature(jwt: string) {
+    const jwtComponents = jwt.split('.')
+    // decode header
+    let header = JSON.parse(atob(jwtComponents[0]))
+    // replacing 'alg' with 'none' invalidates the signature
+    header.alg = 'none'
+    return `${btoa(JSON.stringify(header))}.${jwtComponents[1]}.${jwtComponents[2]}`
+  }
+
+  private static async generateVisa(sub: string, type: string, asserted: number, duration: string, value: string): Promise<any> {
       const issuer = 'https://dac.madeup.com.au'
       const kid = 'rfc-rsa'
       return await makeJwtVisaSigned(
@@ -459,7 +473,7 @@ export class AppBroker {
           issuer,
           kid,
           sub,
-          { days: 90 },
+          duration,
           {
               ga4gh_visa_v1: {
                   type,
