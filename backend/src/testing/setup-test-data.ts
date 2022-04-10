@@ -91,7 +91,7 @@ export async function setupTestData(): Promise<string> {
   await new DynamoDBAdapter('Fixture').createFixture(
     id,
     {
-      scenarioId: 'error',
+      scenarioId: '2022',
       providerRaw: {
         clients: [
           {
