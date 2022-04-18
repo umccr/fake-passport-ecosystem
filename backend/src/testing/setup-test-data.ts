@@ -5,7 +5,7 @@ import { DynamoDBClient, ScanCommand, ScanInput } from '@aws-sdk/client-dynamodb
 import { getMandatoryEnv } from '../common/app-env';
 import { DeleteCommand } from '@aws-sdk/lib-dynamodb';
 
-const dbClient = new DynamoDBClient({});
+const dbClient = new DynamoDBClient({region: 'ap-southeast-2', endpoint: 'http://localhost:8000'});
 
 /**
  * Gets all the data from a (presumably small) test table in anticipation of deleting it all.
@@ -114,7 +114,7 @@ export async function setupTestData(): Promise<string> {
       },
       introduceErrors: {
         expiredPassport: false,
-        expiredVisa: true,
+        expiredVisa: false,
         invalidJwtAlgorithm: false,
         invalidPassportSignature: false,
         invalidVisaSignature: true

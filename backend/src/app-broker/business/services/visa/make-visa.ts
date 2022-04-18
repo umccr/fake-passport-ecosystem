@@ -1,10 +1,11 @@
-import forge from 'node-forge';
-import base64url from 'base64url';
-import { add, getUnixTime } from 'date-fns';
+import forge                  from 'node-forge';
+import base64url              from 'base64url';
+import { add, getUnixTime }   from 'date-fns';
 import { importJWK, SignJWT } from 'jose';
-import { EdDsaJose } from './ed-dsa-jose';
-import { RsaJose } from './rsa-jose';
-import cryptoRandomString from 'crypto-random-string';
+import { EdDsaJose }          from './ed-dsa-jose';
+import { RsaJose }            from './rsa-jose';
+import cryptoRandomString     from 'crypto-random-string';
+import {generateSignedJWT}    from "./sign-jwt";
 
 /**
  * Create a compact visa with visa content, a key identifier - and signed by the corresponding key from the passed
@@ -103,18 +104,9 @@ export async function makeJwtVisaSigned(
       dq: keyPrivateJose.dqBase64Url,
       qi: keyPrivateJose.qiBase64Url,
     });
+    const protectedHeader = { alg: keyPrivateJose.alg!, typ: 'JWT', kid: kid }
 
-    const newJwtSigner = new SignJWT(claims);
-
-    newJwtSigner
-      .setProtectedHeader({ alg: keyPrivateJose.alg!, typ: 'JWT', kid: kid })
-      .setSubject(subjectId)
-      .setIssuedAt()
-      .setIssuer(issuer!)
-      .setExpirationTime(duration)
-      .setJti(cryptoRandomString({ length: 16, type: 'alphanumeric' }));
-
-    const jwtVisa = await newJwtSigner.sign(rsaPrivateKey);
+    const jwtVisa = await generateSignedJWT(claims, protectedHeader, subjectId, issuer, duration, rsaPrivateKey)
 
     console.log(`Generated JWT visa that had length in characters of ${jwtVisa.length}`);
 
