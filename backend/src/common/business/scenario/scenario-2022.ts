@@ -2,7 +2,7 @@ import {ScenarioData, ScenarioUser} from './scenario-data';
 
 export class Scenario2022 extends ScenarioData {
     private users: { [key: string]: ScenarioUser } = {
-        'http://uid.org/0': {
+        'noVisas': {
             sub: 'http://uid.org/0',
             name: 'Ted Lasso',
             roles: {
@@ -14,7 +14,7 @@ export class Scenario2022 extends ScenarioData {
             },
             expectedVisas: []
         },
-        'http://uid.org/1': {
+        'ControlledAccessGrant': {
             sub: 'http://uid.org/1',
             name: 'Tony Stark',
             roles: {
@@ -32,7 +32,7 @@ export class Scenario2022 extends ScenarioData {
                 'AcceptedTermsAndPoliciesVisa'
             ]
         },
-        'http://uid.org/2': {
+        'AffiliationAndRole': {
             sub: 'http://uid.org/2',
             name: 'Mary Jones',
             roles: {
@@ -47,7 +47,7 @@ export class Scenario2022 extends ScenarioData {
                 'AcceptedTermsAndPoliciesVisa'
             ]
         },
-        'http://uid.org/3': {
+        'LinkedIdentity': {
             sub: 'http://uid.org/3',
             name: 'Bruce Smith',
             roles: {
@@ -64,7 +64,7 @@ export class Scenario2022 extends ScenarioData {
                 'ResearcherStatus'
             ]
         },
-        'http://uid.org/4': {
+        'Clinician': {
             sub: 'http://uid.org/4',
             name: 'Bruce Smith',
             roles: {
@@ -81,7 +81,7 @@ export class Scenario2022 extends ScenarioData {
                 'ResearcherStatus'
             ]
         },
-        'http://uid.org/5': {
+        'Researcher': {
             sub: 'http://uid.org/5',
             name: 'Thor',
             roles: {
@@ -96,6 +96,62 @@ export class Scenario2022 extends ScenarioData {
                 'ResearcherStatus'
             ]
         },
+        'TermsAndPolicies': {
+            sub: 'http://uid.org/5',
+            name: 'Thor',
+            roles: {
+                institution: null,
+                dataset: null,
+                linkedIdentity: null,
+                termsAndPolicies: true,
+                researcherStatus: null
+            },
+            expectedVisas: [
+                'AcceptedTermsAndPoliciesVisa'
+            ]
+        },
+        'invalidVisaSignature': {
+            sub: 'invalidVisaSignature',
+            name: 'Tony Stark',
+            roles: {
+                institution: null,
+                dataset: null,
+                linkedIdentity: null,
+                termsAndPolicies: false,
+                researcherStatus: null
+            },
+            expectedVisas: [
+                'invalidVisaSignature'
+            ]
+        },
+        'expiredVisa': {
+            sub: 'expiredVisa',
+            name: 'Mary Jones',
+            roles: {
+                institution: null,
+                dataset: null,
+                linkedIdentity: null,
+                termsAndPolicies: false,
+                researcherStatus: null
+            },
+            expectedVisas: [
+                'expiredVisa'
+            ]
+        },
+        'invalidIssuer': {
+            sub: 'invalidIssuer',
+            name: 'Mary Jones',
+            roles: {
+                institution: null,
+                dataset: null,
+                linkedIdentity: null,
+                termsAndPolicies: false,
+                researcherStatus: null
+            },
+            expectedVisas: [
+                'invalidIssuer'
+            ]
+        }
     }
 
     override getUsers() {

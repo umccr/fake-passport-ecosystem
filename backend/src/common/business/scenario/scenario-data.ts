@@ -22,11 +22,11 @@ export abstract class ScenarioData {
   abstract getUsers(): { [key: string]: ScenarioUser };
 
   getUserSubjectIds(): string[] {
-    return Object.keys(this.getUsers())
+    return Object.keys(this.getUsers());
   }
 
   getUserById(sub: string): ScenarioUser {
-    return this.getUsers()[sub]
+    return this.getUsers()[sub];
   }
 
 }

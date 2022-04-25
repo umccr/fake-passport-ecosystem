@@ -7,17 +7,13 @@ export class ScenarioError extends ScenarioData {
             name: 'Tony Stark',
             roles: {
                 institution: null,
-                dataset: {
-                    dataset: 'test-dataset',
-                    approvedAt: 1549632872
-                },
+                dataset: null,
                 linkedIdentity: null,
-                termsAndPolicies: true,
+                termsAndPolicies: false,
                 researcherStatus: null
             },
             expectedVisas: [
-                'ControlledAccessGrant',
-                'AcceptedTermsAndPoliciesVisa'
+                'invalidVisaSignature'
             ]
         },
         'expiredVisa': {
@@ -25,20 +21,30 @@ export class ScenarioError extends ScenarioData {
             name: 'Mary Jones',
             roles: {
                 institution: 'maryjones@test.com',
-                dataset: {
-                    dataset: 'test-dataset',
-                    approvedAt: 1549632872
-                },
+                dataset: null,
                 linkedIdentity: null,
-                termsAndPolicies: true,
+                termsAndPolicies: false,
                 researcherStatus: null
             },
             expectedVisas: [
-                'ControlledAccessGrant',
-                'AcceptedTermsAndPoliciesVisa'
+                'expiredVisa'
+            ]
+        },
+        'invalidIssuer': {
+            sub: 'invalidIssuer',
+            name: 'Mary Jones',
+            roles: {
+                institution: 'maryjones@test.com',
+                dataset: null,
+                linkedIdentity: null,
+                termsAndPolicies: false,
+                researcherStatus: null
+            },
+            expectedVisas: [
+                'invalidIssuer'
             ]
         }
-    }
+    };
 
     override getUsers() {
         return this.users
