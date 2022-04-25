@@ -44,9 +44,9 @@ console.log(`Using valid fixture ${args[0]}}`)
 
 const fixture = await getFixture(args[0]);
 
-const appBrokerValid = new AppBroker(args[0], "not.used", fixture, true);
+const appBroker = new AppBroker(args[0], "not.used", fixture, true);
 
 // THIS IS NOT THE ENTRYPOINT FOR USE IN PRODUCTION WITHIN THE AWS LAMBDA ENVIRONMENT
-appBrokerValid.listen(3455, () => {
+appBroker.listen(3455, () => {
     console.log('Started local broker on 3455');
 })
