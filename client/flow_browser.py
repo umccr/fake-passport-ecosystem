@@ -10,7 +10,7 @@ from server_wait_for_callback import create_code_wait_server, wait_code_wait_ser
 # Does an OIDC flow expecting to need to do some real in browser HTML login/interactions
 #
 
-ISSUER = "http://localhost:3000"
+ISSUER = "http://localhost:3455"
 CLIENT_ID = "client"
 CLIENT_SECRET = "secret"
 REDIRECT = "http://localhost:8888/callback"

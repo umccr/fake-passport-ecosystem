@@ -2,20 +2,18 @@ import express               from 'express';
 import helmet                from 'helmet';
 import morgan                from 'morgan';
 import { errorMiddleware }   from '../common/middlewares/error.middleware';
-import path                  from 'path';
 import cryptoRandomString    from 'crypto-random-string';
 import { DynamoDBAdapter }   from '../common/business/db/oidc-provider-dynamodb-adapter';
-import { jsbn, pki }         from 'node-forge';
-import base64url             from 'base64url';
-import { makePrivateRsaJwk } from '../common/business/crypto/make-keys';
-import {FixturePayload}      from "../common/business/fixture-payload";
+import { makePrivateRsaJwk }        from '../common/business/crypto/make-keys';
+import cors from 'cors';
 
 export interface ScenarioErrors {
   invalidVisaSignature: boolean,
   expiredVisa: boolean,
   invalidPassportSignature: boolean,
   expiredPassport: boolean,
-  invalidJwtAlgorithm: boolean
+  invalidJwtAlgorithm: boolean,
+  invalidIssuer: boolean
 }
 
 interface CreatePayload {
@@ -43,12 +41,12 @@ html(lang="en")
 export class AppControl {
   public readonly app: express.Application;
   public readonly env: string;
-
   constructor() {
     this.app = express();
     this.env = process.env.NODE_ENV || 'development';
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
+    this.app.use(cors())
     // we want the favicon middleware to serve this first, so it avoids any logging - as it is irrelevant to us
     // TODO: reenable for ESM this.app.use(favicon(path.join(__dirname, 'favicon.ico')));
     this.app.use(helmet.hidePoweredBy());
@@ -77,9 +75,9 @@ export class AppControl {
             providerRaw: {
               clients: [
                 {
-                  client_id: 'abcd',
-                  client_secret: 'xyzz',
-                  redirect_uris: ['http://localhost:8888/callback'],
+                  client_id: 'client',
+                  client_secret: 'secret',
+                  redirect_uris: ['http://localhost:4200/callback', 'http://localhost:8888/callback'],
                 },
               ],
               jwks: {keys: [jwksKey]},
@@ -99,7 +97,6 @@ export class AppControl {
         3600,
       );
 
-      // TODO: return enough data from the API call for clients to simulate a flow (app client id etc?)
       return res.send({id});
     });
 

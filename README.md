@@ -48,9 +48,9 @@ Set up the GSI's by running:
 ```shell
 aws dynamodb update-table \
 --table-name agha-aai-test-bed-local-dev \
---attribute-definitions AttributeName=modelId,AttributeType=S \
---global-secondary-index-updates \
- '{"Create":{"IndexName":"uidIndex","KeySchema":[{"AttributeName":"modelId","KeyType":"HASH"}],"ProvisionedThroughput":{"ReadCapacityUnits":10,"WriteCapacityUnits":5},"Projection":{"ProjectionType":"ALL"}}}' --endpoint-url http://localhost:8000
+--attribute-definitions AttributeName=modelId,AttributeType=S AttributeName=uid,AttributeType=S \
+    --global-secondary-index-updates \
+     '{"Create":{"IndexName":"uidIndex","KeySchema":[{"AttributeName":"uid","KeyType":"HASH"}],"ProvisionedThroughput":{"ReadCapacityUnits":10,"WriteCapacityUnits":5},"Projection":{"ProjectionType":"ALL"}}}' --endpoint-url http://localhost:8000
 ```
 
 ```shell

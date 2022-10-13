@@ -1,9 +1,9 @@
 import requests
-
+import sys
 from server_wait_for_callback import create_code_wait_server, wait_code_wait_server
 
-ISSUER = "http://localhost:3000"
-#ISSUER = "https://jtbpmjfzfjngtzqz.aai.nagim.dev"
+CONTROL = "http://localhost:3454"
+ISSUER = "http://localhost:3455"
 CLIENT_ID = "client"
 CLIENT_SECRET = "secret"
 REDIRECT = "http://localhost:8888/callback"
@@ -12,10 +12,29 @@ REDIRECT = "http://localhost:8888/callback"
 # Does an OIDC flow and finishes with a fetch of the userinfo endpoint
 #
 
-
-create_code_wait_server()
+print('Generating', sys.argv[1], 'visa')
 
 s = requests.Session()
+
+createFixture = s.post(
+    f"{CONTROL}/create",
+    data={
+        "scenario": "2022",
+        "forceSubject": sys.argv[1],
+        "forceAccept": True
+    },
+)
+
+fixtureId = createFixture.json()['id']
+
+setFixture = s.get(
+    f"{ISSUER}/setFixture",
+    params={
+        "fixtureId": fixtureId
+    }
+)
+
+create_code_wait_server()
 
 r = s.get(
     f"{ISSUER}/auth",
@@ -28,7 +47,6 @@ r = s.get(
     }
 )
 
-print(r)
 
 code = wait_code_wait_server()
 

@@ -2,5 +2,5 @@
   "watch": ["src", ".env"],
   "ext": "js,ts,json",
   "ignore": ["src/**/*.spec.ts", "src/**/*.test.ts"],
-  "exec": "node --experimental-specifier-resolution=node --loader ts-node/esm --require dotenv/config src/bootstrap-local.ts"
+  "exec": "node --experimental-specifier-resolution=node --loader ts-node/esm --require dotenv/config src/bootstrap-control.ts"
 }

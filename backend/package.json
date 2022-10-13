@@ -11,7 +11,8 @@
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
-    "dev": " cross-env NODE_ENV=development nodemon",
+    "dev": "cross-env NODE_ENV=development nodemon",
+    "broker": "node --experimental-specifier-resolution=node --loader ts-node/esm --require dotenv/config src/bootstrap-local.ts",
     "build": "tsc --build",
     "watch": "tsc --build --watch"
   },
@@ -52,6 +53,7 @@
   "devDependencies": {
     "@types/compression": "^1.7.0",
     "@types/cookie-parser": "^1.4.2",
+    "@types/cors": "^2.8.12",
     "@types/express": "^4.17.11",
     "@types/hpp": "^0.2.1",
     "@types/jsonwebtoken": "^8.5.1",

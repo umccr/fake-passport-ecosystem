@@ -97,7 +97,7 @@ export async function setupTestData(): Promise<string> {
           {
             client_id: clientId,
             client_secret: clientSecret,
-            redirect_uris: ['http://localhost:8888/callback'],
+            redirect_uris: ['http://localhost:4200/callback', 'http://localhost:8888/callback'],
           },
         ],
         jwks: { keys: [jwksKey] },
@@ -111,13 +111,6 @@ export async function setupTestData(): Promise<string> {
       },
       consentStage: {
         forceAccept: true
-      },
-      introduceErrors: {
-        expiredPassport: false,
-        expiredVisa: false,
-        invalidJwtAlgorithm: false,
-        invalidPassportSignature: false,
-        invalidVisaSignature: true
       }
     },
     3600,

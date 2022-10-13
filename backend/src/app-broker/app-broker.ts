@@ -1,25 +1,21 @@
-import express from 'express';
-import { errorMiddleware } from '../common/middlewares/error.middleware';
+import express                                                               from 'express';
+import {errorMiddleware}                                                     from '../common/middlewares/error.middleware';
+import {Account, Configuration, KoaContextWithOIDC, Provider, UnknownObject} from 'oidc-provider';
+import {DynamoDBAdapter}                                                     from '../common/business/db/oidc-provider-dynamodb-adapter';
+import _                                                                     from 'lodash';
+import {makeJwtVisaSigned}                                                   from './business/services/visa/make-visa';
+import {keyDefinitions}                                                      from './business/services/visa/keys';
+import {FixturePayload, getFixture}                                          from '../common/business/fixture-payload';
+import {renderLoginPage}                                                     from './pages/login/login';
+import {renderHomePage}                                                      from './pages/home/home';
 import {
-  Account,
-  AccountClaims,
-  CanBePromise,
-  Configuration,
-  KoaContextWithOIDC,
-  Provider,
-  UnknownObject
-}                                                                   from 'oidc-provider';
-import { DynamoDBAdapter }                                          from '../common/business/db/oidc-provider-dynamodb-adapter';
-import _                                                            from 'lodash';
-import { makeJwtVisaSigned }                                        from './business/services/visa/make-visa';
-import { keyDefinitions }                                           from './business/services/visa/keys';
-import { FixturePayload }                                           from '../common/business/fixture-payload';
-import { renderLoginPage }                                          from './pages/login/login';
-import { renderHomePage }                                           from './pages/home/home';
-import { loggingMiddleware, parseMiddleware, setNoCacheMiddleware } from '../common/middlewares/util.middleware';
-import {Roles, ScenarioUser}                                        from "../common/business/scenario/scenario-data";
-import {ScenarioErrors}                                             from "../app-control/app-control";
-import {ScenarioError}                                              from "../common/business/scenario/scenario-error";
+  loggingMiddleware,
+  parseMiddleware,
+  setNoCacheMiddleware
+}                                                                            from '../common/middlewares/util.middleware';
+import {ScenarioUser}                                                        from "../common/business/scenario/scenario-data";
+import {ScenarioError}                                                       from "../common/business/scenario/scenario-error";
+import cors                                                                  from "cors";
 
 /**
  * An express app wrapper that acts as a simulated GA4GH passport broker. The broker
@@ -34,7 +30,7 @@ export class AppBroker {
   public readonly brokerDomain: string;
 
   // the fixture defines the custom behaviour and initial state of this broker
-  public readonly fixture: FixturePayload;
+  public fixture: FixturePayload;
 
   // the OIDC provider that is custom configured for this fixture/broker.
   private readonly provider: Provider;
@@ -45,6 +41,8 @@ export class AppBroker {
     this.brokerId = brokerId;
     this.brokerDomain = brokerDomain;
     this.fixture = fixture;
+
+    this.app.use(cors())
 
     const issuer = localBootstrap ? 'http://localhost:3000' : `https://${brokerId}.${this.brokerDomain}`;
 
@@ -58,18 +56,37 @@ export class AppBroker {
       res.status(200).send(await renderHomePage(brokerId, fixture));
     });
 
+    // update which fixture is being used
+    this.app.get('/setFixture', async (req, res) => {
+      const fixtureId = req.query.fixtureId as string;
+
+      if (!fixtureId) {
+        res.status(400).json({error: 'missing fixture id'})
+        return
+      }
+
+      await this.setFixture(fixtureId)
+      res.status(200)
+      res.send()
+    } )
+
     // register our interaction endpoints
     this.app.get(AppBroker.getInteractionRoute(null), setNoCacheMiddleware, (req, res, next) => this.handleInteraction(req, res, next));
 
     this.app.post(AppBroker.getInteractionRoute(null, 'login'), setNoCacheMiddleware, parseMiddleware, (req, res, next) =>
       this.handleInteractionLoginPostAction(req, res, next),
     );
+
     // TODO: this.app.post(AppBroker.getInteractionRoute(null, 'consent'), setNoCacheMiddleware, parseMiddleware, (req, res, next) => XXXXX(req, res, next));
 
     // register the provider (all the OIDC endpoints /auth, /token etc)
     this.app.use(this.provider.callback());
-
     this.app.use(errorMiddleware);
+  }
+
+  public async setFixture(fixtureId: string) {
+    this.fixture = await getFixture(fixtureId)
+    return
   }
 
   public listen(port: number, callback?: () => void) {
@@ -94,7 +111,7 @@ export class AppBroker {
     // gradually flesh this config out with as much dynamic behaviour as we
     // need to support various fixtures
     const config: Configuration = {
-      findAccount: (ctx, sub, code) => this.findAccount(ctx, sub),
+      findAccount: (ctx, sub, code) => this.findAccount(sub, ctx),
       claims: {
         ga4gh: ['ga4gh_passport_v1'],
         openid: ['sub'],
@@ -267,8 +284,7 @@ export class AppBroker {
           throw new Error('Unknown interaction prompt');
       }
     } catch (err) {
-      console.log(err);
-      return next(err);
+      return next();
     }
   }
 
@@ -305,6 +321,7 @@ export class AppBroker {
     const loginResult = {
       login: { accountId: user, remember: false },
     };
+
     await this.provider.interactionFinished(req, res, loginResult, { mergeWithLastSubmission: false });
   }
 
@@ -366,7 +383,7 @@ export class AppBroker {
    * @param sub account identifier (subject)
    * @private
    */
-  private async findAccount(ctx: KoaContextWithOIDC, sub: string): Promise<Account | undefined> {
+  public async findAccount(sub: string, ctx?: KoaContextWithOIDC): Promise<Account | undefined > {
     // @param token - is a reference to the token used for which a given account is being loaded,
     //   is undefined in scenarios where claims are returned from authorization endpoint
     const user = this.fixture.scenario?.getUserById(sub);
@@ -375,8 +392,25 @@ export class AppBroker {
       return;
     }
 
-    const visas = await this.generateVisas(user, false, this.fixture.introduceErrors);
+    let visas: string[] = []
 
+    switch(this.fixture.scenarioId) {
+      case '2022': {
+        visas = await this.generateVisas2022(user, false);
+        break
+      }
+      case 'errors': {
+        visas = await AppBroker.generateVisasWithError(user)
+      }
+    }
+
+    // return {
+    //   accountId: sub,
+    //   claims: {
+    //     sub: sub,
+    //     ga4gh_passport_v1: visas
+    //   }
+    // }
     return {
       accountId: sub,
       claims: async (use, scope, claims, rejected) => {
@@ -388,9 +422,27 @@ export class AppBroker {
     }
   }
 
-  private async generateVisas(user: ScenarioUser, isLinkedAccount: boolean = false, introduceErrors: ScenarioErrors | undefined): Promise<string[]> {
+  private async generateVisas2022(user: ScenarioUser, isLinkedAccount: boolean = false): Promise<string[]> {
       const {sub, roles} = user
-      const visas = []
+      const visas: string[] = []
+
+      switch (user.sub) {
+        case 'invalidVisaSignature': {
+          const visa = await AppBroker.generateVisa(user.sub, '', Date.now(), '90d', '')
+          const visaWithInvalidSignature = AppBroker.invalidateSignature(visa)
+          visas.push(visaWithInvalidSignature)
+          break
+        }
+        case 'expiredVisa': {
+          const errorVisa = await AppBroker.generateVisa(user.sub, '', Date.now(), '0s', '') // this visa will expire on creation
+          visas.push(errorVisa)
+          break
+        }
+        case 'invalidIssuer': {
+          const errorVisa = await AppBroker.generateVisa(user.sub, '', Date.now(), '90d', '', 'fakeissuer.com')
+          visas.push(errorVisa)
+        }
+      }
 
       if (roles.dataset) {
           const controlledAccessVisa = await AppBroker.generateVisa(sub, 'ControlledAccessGrants', roles.dataset.approvedAt, '90d', roles.dataset.dataset)
@@ -416,7 +468,7 @@ export class AppBroker {
           const linkedUser = this.fixture.scenario?.getUserById(roles.linkedIdentity)
           // is this the right way to go with linked identities? generate all visas for all linked identities
           if (linkedUser) {
-              const linkedVisas = await this.generateVisas(linkedUser, true, introduceErrors)
+              const linkedVisas = await this.generateVisas2022(linkedUser, true)
               linkedVisas.forEach((linkedVisa: any) => {
                   visas.push(linkedVisa)
               })
@@ -425,32 +477,30 @@ export class AppBroker {
           const linkedIdentityVisa = await AppBroker.generateVisa(sub, 'LinkedIdentities', Date.now(),'90d', roles.linkedIdentity)
           visas.push(linkedIdentityVisa)
       }
-
-      if (introduceErrors) {
-        const errors = await AppBroker.generateVisasWithError(introduceErrors)
-        errors.forEach((erroredOutVisa) => {
-          visas.push(erroredOutVisa)
-        })
-      }
-
       return visas
   }
 
-  private static async generateVisasWithError(introduceErrors: ScenarioErrors): Promise<string[]> {
+  private static async generateVisasWithError(user: ScenarioUser): Promise<string[]> {
     const visasWithErrors = []
     const errorScenarioUsers = new ScenarioError().getUsers()
 
-    if (introduceErrors.invalidVisaSignature) {
-      const invalidVisaUser = errorScenarioUsers['invalidVisaSignature']
-      const visa = await AppBroker.generateVisa(invalidVisaUser.sub, '', Date.now(), '90d', '')
-      const visaWithInvalidSignature = AppBroker.invalidateSignature(visa)
-      visasWithErrors.push(visaWithInvalidSignature)
-    }
-
-    if (introduceErrors.expiredVisa) {
-      const expiredVisaUser = errorScenarioUsers['expiredVisa']
-      const errorVisa = await AppBroker.generateVisa(expiredVisaUser.sub, '', Date.now(), '0s', '') // this visa will expire on creation
-      visasWithErrors.push(errorVisa)
+    switch (user.sub) {
+      case 'invalidVisaSignature': {
+        const visa = await AppBroker.generateVisa(user.sub, '', Date.now(), '90d', '')
+        const visaWithInvalidSignature = AppBroker.invalidateSignature(visa)
+        visasWithErrors.push(visaWithInvalidSignature)
+        break
+      }
+      case 'expiredVisa': {
+        const errorVisa = await AppBroker.generateVisa(user.sub, '', Date.now(), '0s', '') // this visa will expire on creation
+        visasWithErrors.push(errorVisa)
+        break
+      }
+      case 'invalidIssuer': {
+        const invalidIssuerUser = errorScenarioUsers['invalidIssuer']
+        const errorVisa = await AppBroker.generateVisa(invalidIssuerUser.sub, '', Date.now(), '0s', '', 'fakeissuer.com')
+        visasWithErrors.push(errorVisa)
+      }
     }
 
     return visasWithErrors
@@ -465,8 +515,7 @@ export class AppBroker {
     return `${btoa(JSON.stringify(header))}.${jwtComponents[1]}.${jwtComponents[2]}`
   }
 
-  private static async generateVisa(sub: string, type: string, asserted: number, duration: string, value: string): Promise<any> {
-      const issuer = 'https://dac.madeup.com.au'
+  private static async generateVisa(sub: string, type: string, asserted: number, duration: string | number, value: string, issuer: string = 'https://dac.madeup.com.au'): Promise<any> {
       const kid = 'rfc-rsa'
       return await makeJwtVisaSigned(
           keyDefinitions,
