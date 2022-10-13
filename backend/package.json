@@ -34,7 +34,7 @@
     "handlebars": "4.7.7",
     "helmet": "5.0.2",
     "hpp": "0.2.3",
-    "jose": "4.4.0",
+    "jose": "4.9.2",
     "jsonwebtoken": "8.5.1",
     "jwks-rsa": "2.0.5",
     "lodash": "4.17.21",
