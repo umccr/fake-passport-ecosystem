@@ -1,14 +1,29 @@
-import express from 'express';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import favicon from 'serve-favicon';
-import { errorMiddleware } from '../common/middlewares/error.middleware';
-import path from 'path';
-import cryptoRandomString from 'crypto-random-string';
-import { DynamoDBAdapter } from '../common/business/db/oidc-provider-dynamodb-adapter';
-import { jsbn, pki } from 'node-forge';
-import base64url from 'base64url';
+import express               from 'express';
+import helmet                from 'helmet';
+import morgan                from 'morgan';
+import { errorMiddleware }   from '../common/middlewares/error.middleware';
+import path                  from 'path';
+import cryptoRandomString    from 'crypto-random-string';
+import { DynamoDBAdapter }   from '../common/business/db/oidc-provider-dynamodb-adapter';
+import { jsbn, pki }         from 'node-forge';
+import base64url             from 'base64url';
 import { makePrivateRsaJwk } from '../common/business/crypto/make-keys';
+import {FixturePayload}      from "../common/business/fixture-payload";
+
+export interface ScenarioErrors {
+  invalidVisaSignature: boolean,
+  expiredVisa: boolean,
+  invalidPassportSignature: boolean,
+  expiredPassport: boolean,
+  invalidJwtAlgorithm: boolean
+}
+
+interface CreatePayload {
+  scenario: string,
+  forceSubject: string | null,
+  forceAccept: boolean,
+  errors?: ScenarioErrors
+}
 
 const pugView = `
 doctype html
@@ -32,7 +47,8 @@ export class AppControl {
   constructor() {
     this.app = express();
     this.env = process.env.NODE_ENV || 'development';
-
+    this.app.use(express.json());
+    this.app.use(express.urlencoded({ extended: true }));
     // we want the favicon middleware to serve this first, so it avoids any logging - as it is irrelevant to us
     // TODO: reenable for ESM this.app.use(favicon(path.join(__dirname, 'favicon.ico')));
     this.app.use(helmet.hidePoweredBy());
@@ -49,32 +65,42 @@ export class AppControl {
     });
 
     this.app.post('/create', async (req, res) => {
+      const body = req.body as CreatePayload
       const id = cryptoRandomString({ length: 16, characters: 'bcdfghjkmnpqrstvwyz' });
 
       const jwksKey = await makePrivateRsaJwk();
 
-      /*
-      TODO: from the parameters passed into this API - we construct a fixture
       await new DynamoDBAdapter('Fixture').createFixture(
         id,
-        {
-          clients: [
-            {
-              client_id: 'abcd',
-              client_secret: 'xyzz',
-              redirect_uris: ['http://localhost:8888/callback'],
+          {
+            scenarioId: body.scenario,
+            providerRaw: {
+              clients: [
+                {
+                  client_id: 'abcd',
+                  client_secret: 'xyzz',
+                  redirect_uris: ['http://localhost:8888/callback'],
+                },
+              ],
+              jwks: {keys: [jwksKey]},
+              cookies: {
+                keys: [cryptoRandomString({length: 16, type: 'url-safe'})],
+              },
             },
-          ],
-          jwks: { keys: [jwksKey] },
-          cookies: {
-            keys: [cryptoRandomString({ length: 16, type: 'url-safe' })],
-          },
-        },
+            loginStage: {
+              forceSubject: body.forceSubject
+            },
+            consentStage: {
+              forceAccept: body.forceAccept
+            },
+            introduceErrors: body.errors
+          }
+        ,
         3600,
-      ); */
+      );
 
       // TODO: return enough data from the API call for clients to simulate a flow (app client id etc?)
-      return res.send(`<p>${id}</p>`);
+      return res.send({id});
     });
 
     this.initializeErrorHandling();

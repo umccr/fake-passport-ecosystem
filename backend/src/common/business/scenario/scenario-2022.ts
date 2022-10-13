@@ -12,9 +12,7 @@ export class Scenario2022 extends ScenarioData {
                 termsAndPolicies: false,
                 researcherStatus: null
             },
-            expectedVisas: [
-
-            ]
+            expectedVisas: []
         },
         'http://uid.org/1': {
             sub: 'http://uid.org/1',

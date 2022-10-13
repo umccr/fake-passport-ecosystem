@@ -77,7 +77,7 @@ export class DynamoDBAdapter implements Adapter {
 
     // note: this needs an AWS_REGION set - which is fine when running in a lambda but will need it set
     // in the environment if running outside AWS (see .env)
-    this.client = new DynamoDBClient({});
+    this.client = new DynamoDBClient({region: 'ap-southeast-2', endpoint: 'http://localhost:8000'});
   }
 
   private static expiresInToExpiresAt(expiresIn?: number): number | null {
