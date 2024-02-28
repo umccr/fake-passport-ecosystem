@@ -55,6 +55,7 @@ export class NodeJsLocalLambdaFunction extends Construct {
       memorySize: props.memorySize,
       timeout: props.duration,
       role: props.lambdaRole,
+      runtime: Runtime.NODEJS_20_X,
       entry: "../backend/src/bootstrap-lambda.ts",
       environment: props.environmentVariables,
       bundling: {
@@ -83,6 +84,14 @@ export class NodeJsLocalLambdaFunction extends Construct {
           `import { createRequire as topLevelCreateRequire } from 'module'; `,
           `const require = topLevelCreateRequire(import.meta.url); `,
         ].join(" "),
+        commandHooks: {
+          afterBundling: (inputDir: string, outputDir: string): string[] => [
+            `cp ${inputDir}/../backend/src/app-broker/pages/home/home.pug ${outputDir}`,
+            `cp ${inputDir}/../backend/src/app-broker/pages/login/login.html ${outputDir}`,
+          ],
+          beforeBundling: (inputDir: string, outputDir: string): string[] => [],
+          beforeInstall: (inputDir: string, outputDir: string): string[] => [],
+        },
       },
     });
 

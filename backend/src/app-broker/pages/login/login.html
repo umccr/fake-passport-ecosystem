@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -60,7 +60,7 @@
 
         <div class="form-floating">
           <select class="form-select" id="floatingUser" name="user">
-            <option selected>Choose a user by email</option>
+            <option selected>Choose a user by identifier</option>
             {{#each users}}
             <option value="{{this}}">{{this}}</option>
             {{/each}}
@@ -72,9 +72,6 @@
           <label for="floatingPassword">Password (not needed)</label>
         </div>
 
-        <div class="checkbox mb-3">
-          <label> <input type="checkbox" value="remember-me" name="remember" /> Remember me </label>
-        </div>
         <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
         <p class="mt-5 mb-3 text-muted">AGHA AAI Test Bed</p>
       </form>

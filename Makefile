@@ -5,9 +5,9 @@ PROJECT_NAME := agha-aai-test-bed
 # changing this allows multiple installations of the entire stack in a single AWS account
 DEVELOPER_NAME := dev
 
-AWS_DOMAIN := aai.nagim.dev
-AWS_DOMAINZONE := Z0321813PLMQECK916W2
-AWS_AUSCERT := arn:aws:acm:ap-southeast-2:843407916570:certificate/fa4885fb-5765-4fe6-9341-47fca360735e
+AWS_DOMAIN := aai.dev.umccr.org
+AWS_DOMAINZONE := Z08051723GLGZNT6G8DXW
+AWS_AUSCERT := arn:aws:acm:ap-southeast-2:843407916570:certificate/479bfe83-07ca-4e16-8642-7d1444b97bc5
 
 
 # test for the existence of any globally installed binaries we depend on
@@ -16,7 +16,6 @@ setup:
 	which -s pipenv npx aws
 	cd backend && npm install
 	cd iac && npm install
-	cd client && pipenv install
 
 
 # both our local and deploy stages don't actually do a real typescript compile - so this does
@@ -35,6 +34,7 @@ runaws:
 
 
 # deploys via CDK to AWS
+.PHONY: deploy
 deploy:
 	cd iac && UMCCR_DEVELOPER=$(DEVELOPER_NAME) npx cdk deploy --context build="$(DEVELOPER_NAME)" \
 	   --parameters "SemanticVersion=0.0.0-$(DEVELOPER_NAME)" \

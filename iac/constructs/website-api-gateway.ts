@@ -36,7 +36,7 @@ export class WebsiteApiGateway extends Construct {
   constructor(
     parent: Construct,
     name: string,
-    props: MultiTargetLoadBalancerProps
+    props: MultiTargetLoadBalancerProps,
   ) {
     super(parent, name);
 
@@ -48,12 +48,12 @@ export class WebsiteApiGateway extends Construct {
       name: this.fqdn,
       protocolType: "HTTP",
       target: props.targetDefault.functionArn,
-      //corsConfiguration: {
-      //  allowOrigins: ["*"],
-      //  allowMethods: ["GET", "PUT", "POST"],
-      //  allowHeaders: ["*"],
-      //  allowCredentials: true
-      //},
+      corsConfiguration: {
+        allowOrigins: ["*"],
+        allowMethods: ["GET", "PUT", "POST"],
+        allowHeaders: ["*"],
+        allowCredentials: false,
+      },
     });
 
     // register a custom domain to overlay the api gw chosen endpoint
@@ -65,12 +65,11 @@ export class WebsiteApiGateway extends Construct {
           endpointType: "REGIONAL",
         },
       ],
-
     });
 
     // we always need to add this in or else the domain name stuff can get ahead
     // of the actual API creation
-    dn.addDependsOn(this.apiGateway);
+    dn.addDependency(this.apiGateway);
 
     const albZone = HostedZone.fromHostedZoneAttributes(this, "AlbZone", {
       hostedZoneId: props.nameZoneId,
@@ -80,8 +79,8 @@ export class WebsiteApiGateway extends Construct {
     const recordTarget = RecordTarget.fromAlias(
       new ApiGatewayv2DomainProperties(
         dn.attrRegionalDomainName,
-        dn.attrRegionalHostedZoneId
-      )
+        dn.attrRegionalHostedZoneId,
+      ),
     );
 
     const albDns = new ARecord(this, "AlbAliasRecord", {
@@ -100,9 +99,9 @@ export class WebsiteApiGateway extends Construct {
     const mappings = new CfnApiMapping(this, "Mapping", {
       apiId: this.apiGateway.ref,
       domainName: dn.domainName,
-      stage: '$default',
+      stage: "$default",
     });
-    mappings.addDependsOn(this.apiGateway);
-    mappings.addDependsOn(dn);
+    mappings.addDependency(this.apiGateway);
+    mappings.addDependency(dn);
   }
 }

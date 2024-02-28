@@ -3,25 +3,7 @@ html(lang="en")
     head
         title= pageTitle
     body
-        h1 Broker
+        h1 #{description}
         #container.col
             p.
                 I am a GA4GH broker with id #{brokerId}.
-            p.
-                If present, the subject that will always auto login for this broker = #{fixture.loginStage.forceSubject}
-
-            h2 Test Scenarios
-
-            p We have provided a number of test scenarios. Each scenario and their expected output is depicted below.
-
-            each scenario in scenarios
-                #container
-                    h3 #{scenario.name}
-                table.table.table-striped
-                    tr
-                        th Email
-                        th Expected Output
-                    each user in scenario.scenario
-                        tr
-                            td= user.sub
-                            th= user.expectedVisas.join(', ')

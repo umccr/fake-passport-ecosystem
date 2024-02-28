@@ -1,32 +1,52 @@
-import { setupTestData } from './testing/setup-test-data';
-import { AppBroker } from './app-broker/app-broker';
-import { AppControl } from './app-control/app-control';
-import { DynamoDBAdapter } from "./common/business/db/oidc-provider-dynamodb-adapter";
-import { getFixture } from "./common/business/fixture-payload";
+import { setupTestData } from "./testing/setup-test-data";
+import { AppVisaIssuerEga } from "./app-visa-issuer/demo-issuers/app-visa-issuer-ega";
+import { AppVisaIssuerAhpra } from "./app-visa-issuer/demo-issuers/app-visa-issuer-ahpra";
+import { BrokerEurope } from "./app-broker/demo-brokers/broker-europe";
+import { BrokerAustralia } from "./app-broker/demo-brokers/broker-australia";
+import { BrokerUsa } from "./app-broker/demo-brokers/broker-usa";
 
 // the development node bootstrap entrypoint
-// this entrypoint is used for running the backend locally on a dev machine - but must
-// still be done with AWS env variables set for permissions into the dev AWS
+// this entrypoint is used for running the backend locally on a dev machine
+// (though noting that even on a dev machine AWS dynamo tables etc. are still accessed)
 
-console.log('Bootstrapping local server (broker and control)');
-console.log('Creating fresh test data');
+console.log("Bootstrapping local server (broker and visa issuers)");
+console.log("Creating fresh test data");
 
-setupTestData().then(async (id: string) => {
-  console.log('Creating Express app');
+const PORT_EUROPE = 3001;
+const PORT_AUSTRALIA = 3002;
+const PORT_USA = 3003;
 
-  const fixture = await getFixture(id);
+const PORT_EGA = 4000;
+const PORT_AHPRA = 4001;
 
-  const appBroker = new AppBroker(id, "not.used", fixture, true);
+// THIS IS *NOT* THE ENTRYPOINT FOR USE WITH THE (PRODUCTION) AWS LAMBDA ENVIRONMENT
+setupTestData().then(async () => {
+  console.log("Creating GA4GH test visa issuer servers(s)");
 
-  // THIS IS NOT THE ENTRYPOINT FOR USE IN PRODUCTION WITHIN THE AWS LAMBDA ENVIRONMENT
-  appBroker.listen(3000, () => {
-    console.log('Started local broker on 3000');
+  const appVisaIssuerEga = new AppVisaIssuerEga(PORT_EGA);
+  const appVisaIssuerAhpra = new AppVisaIssuerAhpra(PORT_AHPRA);
 
-    // until we start using control no need to start it
-    //const appControl = new AppControl();
+  await Promise.all([
+    appVisaIssuerEga.listen(PORT_EGA),
+    appVisaIssuerAhpra.listen(PORT_AHPRA),
+  ]);
 
-    //appControl.listen(3001, () => {
-    //  console.log('Started control on 3001');
-    //});
-  });
+  console.log("Creating GA4GH test broker servers(s)");
+
+  const appBrokerEurope = new BrokerEurope(PORT_EUROPE, [
+    appVisaIssuerEga,
+    appVisaIssuerAhpra,
+  ]);
+
+  const appBrokerAustralia = new BrokerAustralia(PORT_AUSTRALIA, [
+    appVisaIssuerAhpra,
+  ]);
+
+  const appBrokerUsa = new BrokerUsa(PORT_USA, [appVisaIssuerAhpra]);
+
+  await Promise.all([
+    appBrokerEurope.listen(PORT_EUROPE),
+    appBrokerAustralia.listen(PORT_AUSTRALIA),
+    appBrokerUsa.listen(PORT_USA),
+  ]);
 });

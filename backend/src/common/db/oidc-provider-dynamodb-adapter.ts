@@ -36,8 +36,8 @@
 // Mention @SachinShekhar in issues to ask questions about this code.
 // Changes: updated to use newer AWS SDK
 
-import { Adapter, AdapterPayload } from 'oidc-provider';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { Adapter, AdapterPayload } from "oidc-provider";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   DynamoDBDocumentClient,
   UpdateCommand,
@@ -50,9 +50,8 @@ import {
   QueryCommandInput,
   BatchWriteCommandInput,
   BatchWriteCommand,
-} from '@aws-sdk/lib-dynamodb';
-import { getMandatoryEnv } from '../../app-env';
-import { FixturePayload } from "../fixture-payload";
+} from "@aws-sdk/lib-dynamodb";
+import { getMandatoryEnv } from "../app-env";
 
 /**
  * A single-table Dynamo adapter for use by the Node OIDC provider (and ancillary
@@ -73,7 +72,7 @@ export class DynamoDBAdapter implements Adapter {
 
     // this gets set in the environment of the lambda to a CDK created table - but if running locally
     // will need to be set to an already created table (see .env)
-    this.tableName = getMandatoryEnv('TABLE_NAME');
+    this.tableName = getMandatoryEnv("TABLE_NAME");
 
     // note: this needs an AWS_REGION set - which is fine when running in a lambda but will need it set
     // in the environment if running outside AWS (see .env)
@@ -84,7 +83,7 @@ export class DynamoDBAdapter implements Adapter {
     return expiresIn ? Math.floor(Date.now() / 1000) + expiresIn : null;
   }
 
-  async createFixture(id: string, payload: FixturePayload, expiresIn?: number): Promise<void> {
+  /*async createFixture(id: string, payload: FixturePayload, expiresIn?: number): Promise<void> {
     if (this.name != 'Fixture') throw new Error('Fixture methods can only be used on a Fixture adapter');
 
     try {
@@ -133,30 +132,38 @@ export class DynamoDBAdapter implements Adapter {
       console.log(e);
       throw e;
     }
-  }
+  }*/
 
-  async upsert(id: string, payload: AdapterPayload, expiresInSeconds?: number): Promise<void> {
+  async upsert(
+    id: string,
+    payload: AdapterPayload,
+    expiresInSeconds?: number,
+  ): Promise<void> {
     try {
-      const docClient = DynamoDBDocumentClient.from(this.client, { marshallOptions: { removeUndefinedValues: true } });
+      const docClient = DynamoDBDocumentClient.from(this.client, {
+        marshallOptions: { removeUndefinedValues: true },
+      });
 
       // DynamoDB can recognise TTL values only in seconds
-      const expiresAt = expiresInSeconds ? Math.floor(Date.now() / 1000) + expiresInSeconds : null;
+      const expiresAt = expiresInSeconds
+        ? Math.floor(Date.now() / 1000) + expiresInSeconds
+        : null;
 
       const params: UpdateCommandInput = {
         TableName: this.tableName,
-        Key: { modelId: this.name + '-' + id },
+        Key: { modelId: this.name + "-" + id },
         UpdateExpression:
-          'SET payload = :payload' +
-          (expiresAt ? ', expiresAt = :expiresAt' : '') +
-          (payload.userCode ? ', userCode = :userCode' : '') +
-          (payload.uid ? ', uid = :uid' : '') +
-          (payload.grantId ? ', grantId = :grantId' : ''),
+          "SET payload = :payload" +
+          (expiresAt ? ", expiresAt = :expiresAt" : "") +
+          (payload.userCode ? ", userCode = :userCode" : "") +
+          (payload.uid ? ", uid = :uid" : "") +
+          (payload.grantId ? ", grantId = :grantId" : ""),
         ExpressionAttributeValues: {
-          ':payload': payload,
-          ...(expiresAt ? { ':expiresAt': expiresAt } : {}),
-          ...(payload.userCode ? { ':userCode': payload.userCode } : {}),
-          ...(payload.uid ? { ':uid': payload.uid } : {}),
-          ...(payload.grantId ? { ':grantId': payload.grantId } : {}),
+          ":payload": payload,
+          ...(expiresAt ? { ":expiresAt": expiresAt } : {}),
+          ...(payload.userCode ? { ":userCode": payload.userCode } : {}),
+          ...(payload.uid ? { ":uid": payload.uid } : {}),
+          ...(payload.grantId ? { ":grantId": payload.grantId } : {}),
         },
       };
 
@@ -168,23 +175,30 @@ export class DynamoDBAdapter implements Adapter {
   }
 
   async find(id: string): Promise<AdapterPayload | undefined> {
+    console.log(`Finding ${id}`);
+
     try {
       const docClient = DynamoDBDocumentClient.from(this.client);
 
-      console.log(`Finding ${id}`);
-
       const params: GetCommandInput = {
         TableName: this.tableName,
-        Key: { modelId: this.name + '-' + id },
-        ProjectionExpression: 'payload, expiresAt',
+        Key: { modelId: this.name + "-" + id },
+        ProjectionExpression: "payload, expiresAt",
       };
 
-      const result = <{ payload: AdapterPayload; expiresAt?: number } | undefined>(await docClient.send(new GetCommand(params))).Item;
+      const result = <
+        { payload: AdapterPayload; expiresAt?: number } | undefined
+      >(await docClient.send(new GetCommand(params))).Item;
 
-      // DynamoDB can take upto 48 hours to drop expired items, so a check is required
-      if (!result || (result.expiresAt && Date.now() > result.expiresAt * 1000)) {
+      // DynamoDB can take upto 48 hours to drop expired items, so an explicit check is required
+      if (
+        !result ||
+        (result.expiresAt && Date.now() > result.expiresAt * 1000)
+      ) {
         return undefined;
       }
+
+      console.log(`Found payload of ${JSON.stringify(result.payload)}`);
 
       return result.payload;
     } catch (e) {
@@ -199,19 +213,24 @@ export class DynamoDBAdapter implements Adapter {
 
       const params: QueryCommandInput = {
         TableName: this.tableName,
-        IndexName: 'userCodeIndex',
-        KeyConditionExpression: 'userCode = :userCode',
+        IndexName: "userCodeIndex",
+        KeyConditionExpression: "userCode = :userCode",
         ExpressionAttributeValues: {
-          ':userCode': userCode,
+          ":userCode": userCode,
         },
         Limit: 1,
-        ProjectionExpression: 'payload, expiresAt',
+        ProjectionExpression: "payload, expiresAt",
       };
 
-      const result = <{ payload: AdapterPayload; expiresAt?: number } | undefined>(await docClient.send(new QueryCommand(params))).Items?.[0];
+      const result = <
+        { payload: AdapterPayload; expiresAt?: number } | undefined
+      >(await docClient.send(new QueryCommand(params))).Items?.[0];
 
       // DynamoDB can take upto 48 hours to drop expired items, so a check is required
-      if (!result || (result.expiresAt && Date.now() > result.expiresAt * 1000)) {
+      if (
+        !result ||
+        (result.expiresAt && Date.now() > result.expiresAt * 1000)
+      ) {
         return undefined;
       }
 
@@ -227,16 +246,18 @@ export class DynamoDBAdapter implements Adapter {
 
     const params: QueryCommandInput = {
       TableName: this.tableName,
-      IndexName: 'uidIndex',
-      KeyConditionExpression: 'uid = :uid',
+      IndexName: "uidIndex",
+      KeyConditionExpression: "uid = :uid",
       ExpressionAttributeValues: {
-        ':uid': uid,
+        ":uid": uid,
       },
       Limit: 1,
-      ProjectionExpression: 'payload, expiresAt',
+      ProjectionExpression: "payload, expiresAt",
     };
 
-    const result = <{ payload: AdapterPayload; expiresAt?: number } | undefined>(await docClient.send(new QueryCommand(params))).Items?.[0];
+    const result = <
+      { payload: AdapterPayload; expiresAt?: number } | undefined
+    >(await docClient.send(new QueryCommand(params))).Items?.[0];
 
     // DynamoDB can take upto 48 hours to drop expired items, so a check is required
     if (!result || (result.expiresAt && Date.now() > result.expiresAt * 1000)) {
@@ -251,16 +272,16 @@ export class DynamoDBAdapter implements Adapter {
 
     const params: UpdateCommandInput = {
       TableName: this.tableName,
-      Key: { modelId: this.name + '-' + id },
-      UpdateExpression: 'SET #payload.#consumed = :value',
+      Key: { modelId: this.name + "-" + id },
+      UpdateExpression: "SET #payload.#consumed = :value",
       ExpressionAttributeNames: {
-        '#payload': 'payload',
-        '#consumed': 'consumed',
+        "#payload": "payload",
+        "#consumed": "consumed",
       },
       ExpressionAttributeValues: {
-        ':value': Math.floor(Date.now() / 1000),
+        ":value": Math.floor(Date.now() / 1000),
       },
-      ConditionExpression: 'attribute_exists(modelId)',
+      ConditionExpression: "attribute_exists(modelId)",
     };
 
     await docClient.send(new UpdateCommand(params));
@@ -271,7 +292,7 @@ export class DynamoDBAdapter implements Adapter {
 
     const params: DeleteCommandInput = {
       TableName: this.tableName,
-      Key: { modelId: this.name + '-' + id },
+      Key: { modelId: this.name + "-" + id },
     };
 
     await docClient.send(new DeleteCommand(params));
@@ -285,12 +306,12 @@ export class DynamoDBAdapter implements Adapter {
     do {
       const params: QueryCommandInput = {
         TableName: this.tableName,
-        IndexName: 'grantIdIndex',
-        KeyConditionExpression: 'grantId = :grantId',
+        IndexName: "grantIdIndex",
+        KeyConditionExpression: "grantId = :grantId",
         ExpressionAttributeValues: {
-          ':grantId': grantId,
+          ":grantId": grantId,
         },
-        ProjectionExpression: 'modelId',
+        ProjectionExpression: "modelId",
         Limit: 25,
         ExclusiveStartKey,
       };
