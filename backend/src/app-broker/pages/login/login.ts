@@ -11,10 +11,12 @@ const __htmlname = join(dirname(__filename), "login.html");
  * Render a HTML login page using templating to inject live data.
  *
  * @param loginUrl
+ * @param brokerDescription
  * @param users
  */
 export async function renderLoginPage(
   loginUrl: string,
+  brokerDescription: string,
   users: string[],
 ): Promise<string> {
   // I realise the templating is no faster because we read/compile every time
@@ -23,5 +25,9 @@ export async function renderLoginPage(
 
   const template = Handlebars.compile(htmlBuffer.toString("utf8"));
 
-  return template({ loginUrl: loginUrl, users: users });
+  return template({
+    loginUrl: loginUrl,
+    brokerDescription: brokerDescription,
+    users: users,
+  });
 }

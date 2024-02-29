@@ -1,5 +1,13 @@
 import { AppVisaIssuer } from "../app-visa-issuer";
-import { makeVisaJwt } from "../../common/crypto/make-visa-jwt";
+import { makeVisaJwt } from "../../common/ga4gh/make-visa-jwt";
+import {
+  BRUCE, DAVE,
+  JOHN, LISA,
+  ROR_AHPRA, ROR_CSIRO, ROR_EMBL,
+  ROR_MCRI,
+  ROR_NIH,
+  SVEN,
+} from "../../common/people/subjects";
 
 export class AppVisaIssuerAhpra extends AppVisaIssuer {
   constructor(domainOrPort: string | number) {
@@ -31,21 +39,39 @@ export class AppVisaIssuerAhpra extends AppVisaIssuer {
     });
   }
 
-  public async createVisaFor(subjectId: string): Promise<string> {
-    return await makeVisaJwt(
-      this.key,
-      this.issuer,
-      this.kid,
-      subjectId,
-      {
+  public async createVisaFor(subjectId: string): Promise<string | null> {
+    let source, value;
+
+    switch (subjectId) {
+      case BRUCE:
+        source = ROR_MCRI;
+        value = "faculty@mcri.edu.au"
+        break;
+      case JOHN:
+      case SVEN:
+        source = ROR_NIH;
+        value = "faculty@nih.gov"
+        break;
+      case LISA:
+        source = ROR_EMBL;
+        value = "student@ebi.ac.uk"
+        break;
+      case DAVE:
+        source = ROR_CSIRO;
+        value = "faculty@csiro.au"
+        break;
+
+    }
+    if (source && value)
+      return await makeVisaJwt(this.key, this.issuer, this.kid, subjectId, {
         ga4gh_visa_v1: {
-          type: "ResearcherStatus",
-          asserted: 1549680000,
-          value: "https://doi.org/10.1038/s41431-018-0219-y",
-          source: "https://ror.org/048fyec77",
+          type: "AffiliationAndRole",
+          asserted: Math.round(Date.now() / 1000),
+          value: value,
+          source: source,
           by: "system",
         },
-      },
-    );
+      });
+    else return null;
   }
 }

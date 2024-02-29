@@ -4,7 +4,7 @@ import morgan from "morgan";
 import { errorMiddleware } from "../common/middlewares/error.middleware";
 import { makeJwks } from "../common/crypto/make-jwks";
 import { JWKS } from "oidc-provider";
-import {AnyJose} from "../common/crypto/jose-keys/any-jose";
+import { AnyJose } from "../common/crypto/jose-keys/any-jose";
 
 export abstract class AppVisaIssuer {
   public readonly app: express.Application;
@@ -12,13 +12,17 @@ export abstract class AppVisaIssuer {
   public readonly kid: string;
   public readonly jwks: JWKS;
 
-  protected constructor(protected id: string, protected issuer: string, protected key: AnyJose) {
+  protected constructor(
+    protected id: string,
+    protected issuer: string,
+    protected key: AnyJose,
+  ) {
     this.app = express();
 
     // if the key provides a kid then we use that throughout
     // but given this is just a demonstration system - we also don't mind just defaulting to a made up kid of 1234
     this.kid = key.kid ? key.kid : "1234";
-    this.jwks =  makeJwks({ [this.kid]: key });
+    this.jwks = makeJwks({ [this.kid]: key });
 
     // we want the favicon middleware to serve this first, so it avoids any logging - as it is irrelevant to us
     // TODO: reenable for ESM this.app.use(favicon(path.join(__dirname, 'favicon.ico')));
@@ -50,7 +54,7 @@ export abstract class AppVisaIssuer {
 
     this.app.get("/visa", async (req, res) => {
       res.status(200).json({
-        visa: this.createVisaFor("andrew")
+        visa: this.createVisaFor("andrew"),
       });
     });
 
@@ -76,5 +80,5 @@ export abstract class AppVisaIssuer {
     return this.id;
   }
 
-  public abstract createVisaFor(subjectId: string): Promise<string>;
+  public abstract createVisaFor(subjectId: string): Promise<string | null>;
 }

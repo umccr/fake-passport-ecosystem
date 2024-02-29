@@ -2,8 +2,12 @@ import { Construct } from "constructs";
 import {
   CfnApi,
   CfnApiMapping,
-  CfnDomainName,
+  CfnDomainName, CfnIntegration, CfnRoute, CfnStage
 } from "aws-cdk-lib/aws-apigatewayv2";
+import {
+  HttpLambdaIntegration
+} from "aws-cdk-lib/aws-apigatewayv2-integrations";
+
 import { Function } from "aws-cdk-lib/aws-lambda";
 import { ARecord, HostedZone, RecordTarget } from "aws-cdk-lib/aws-route53";
 import { ApiGatewayv2DomainProperties } from "aws-cdk-lib/aws-route53-targets";
@@ -47,12 +51,36 @@ export class WebsiteApiGateway extends Construct {
     this.apiGateway = new CfnApi(this, "Api", {
       name: this.fqdn,
       protocolType: "HTTP",
-      target: props.targetDefault.functionArn,
       corsConfiguration: {
         allowOrigins: ["*"],
         allowMethods: ["GET", "PUT", "POST"],
         allowHeaders: ["*"],
         allowCredentials: false,
+      },
+      disableExecuteApiEndpoint: true,
+    });
+
+    const integration = new CfnIntegration(this, "Integration", {
+      apiId: this.apiGateway.attrApiId,
+      integrationType: "AWS_PROXY",
+      integrationUri: props.targetDefault.functionArn,
+      integrationMethod: "POST",
+      payloadFormatVersion:"2.0",
+    } );
+
+    const route = new CfnRoute(this, 'DefaultRoute', {
+      apiId: this.apiGateway.ref,
+      routeKey: '$default',
+      target: `integrations/${integration.ref}`,
+    });
+
+    const stage = new CfnStage(this, 'Stage', {
+      apiId: this.apiGateway.ref,
+      stageName: '$default',
+      autoDeploy: true,
+      defaultRouteSettings: {
+        throttlingBurstLimit: 10,
+        throttlingRateLimit: 10,
       },
     });
 
@@ -95,7 +123,7 @@ export class WebsiteApiGateway extends Construct {
     // WebBrokerApiGatewayMapping93BD2258	CREATE_FAILED	Invalid domain name identifier specified
     // which is a classic example of the mapping being attempted before the
     // domain name record is attached to the API gateway
-    // so anyhow, we explicitly mention the dependencies here..
+    // so anyhow, we explicitly mention the dependencies here...
     const mappings = new CfnApiMapping(this, "Mapping", {
       apiId: this.apiGateway.ref,
       domainName: dn.domainName,

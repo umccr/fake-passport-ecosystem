@@ -44,10 +44,9 @@ const appBrokerUsa = new BrokerUsa(domainName, [appVisaIssuerAhpra]);
  * @param key
  * @param value
  */
-const shorterStringReplacer = (key: string, value: string): string => {
-  if (typeof value === "string") {
-    if (value.length > 256)
-      return value.substring(0, 256) + "... truncated ...";
+const shorterStringReplacer = (key: string, value: any): string => {
+  if (typeof value === 'string' || value instanceof  String) {
+    if (value.length > 256) return value.substring(0, 256) + '... truncated ...';
   }
   return value;
 };

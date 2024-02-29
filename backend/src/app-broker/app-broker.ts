@@ -7,7 +7,7 @@ import Provider, {
   UnknownObject,
 } from "oidc-provider";
 import { DynamoDBAdapter } from "../common/db/oidc-provider-dynamodb-adapter";
-import _ from "lodash";
+import _, { isString } from "lodash";
 import { renderLoginPage } from "./pages/login/login";
 import {
   loggingMiddleware,
@@ -19,7 +19,7 @@ import { AnyJose } from "../common/crypto/jose-keys/any-jose";
 import { makeJwksForOidcProvider } from "../common/crypto/make-jwks";
 import cryptoRandomString from "crypto-random-string";
 import { renderHomePage } from "./pages/home/home";
-import { makePassportJwt } from "../common/crypto/make-passport-jwt";
+import { makePassportJwt } from "../common/ga4gh/make-passport-jwt";
 import {
   URN_GA4GH_TOKEN_TYPE_PASSPORT,
   URN_GRANT_TYPE_TOKEN_EXCHANGE,
@@ -119,12 +119,12 @@ export abstract class AppBroker {
     );
 
     return {
-      access_token: makePassportJwt(
+      access_token: await makePassportJwt(
         this.signingKey,
         this.issuer,
         this.kid,
         sub,
-        allVisas,
+        allVisas.filter((n) => isString(n)) as string[],
       ),
       issued_token_type: URN_GA4GH_TOKEN_TYPE_PASSPORT,
       token_type: "Bearer",
@@ -280,9 +280,6 @@ export abstract class AppBroker {
         console.log(ctx.oidc.params);
         console.log(ctx.oidc.client);
 
-        const audience = ctx?.oidc?.params?.["audience"];
-        console.log(audience);
-
         const requestedTokenType = ctx?.oidc?.params?.[
           "requested_token_type"
         ] as string;
@@ -322,6 +319,16 @@ export abstract class AppBroker {
         // TODO: check the access tokens have ga4gh scope
 
         console.log(accessToken);
+
+        let audience = ctx?.oidc?.params?.["audience"];
+
+        // if (isString(audience))
+        //  audience = [ audience ];
+        console.log(audience);
+
+        let resource = ctx?.oidc?.params?.["resource"];
+
+        console.log(resource);
 
         ctx.body = await this.createPassportFor(accessToken.accountId);
       } catch (e) {
@@ -427,6 +434,7 @@ export abstract class AppBroker {
       .send(
         await renderLoginPage(
           AppBroker.getInteractionRoute(uid, "login"),
+          this.description(),
           this.userList(),
         ),
       );

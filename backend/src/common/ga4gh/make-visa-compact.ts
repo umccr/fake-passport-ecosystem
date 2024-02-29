@@ -1,10 +1,12 @@
 import forge from "node-forge";
 import base64url from "base64url";
 import { add, getUnixTime } from "date-fns";
-import { importJWK, SignJWT } from "jose";
 import cryptoRandomString from "crypto-random-string";
-import { AnyJose } from "./jose-keys/any-jose";
-import { RsaJose } from "./jose-keys/rsa-jose";
+import { AnyJose } from "../crypto/jose-keys/any-jose";
+
+/****
+ **** WAS AN EXPERIMENT - PLEASE IGNORE
+ ****/
 
 /**
  * Create a compact visa with visa content, a key identifier - and signed by the corresponding key from the passed

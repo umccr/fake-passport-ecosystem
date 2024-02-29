@@ -1,6 +1,6 @@
 import { importJWK, SignJWT } from "jose";
 import cryptoRandomString from "crypto-random-string";
-import { AnyJose } from "./jose-keys/any-jose";
+import { AnyJose } from "../crypto/jose-keys/any-jose";
 
 /**
  * Make a JWT string representing a GA4GH visa.
@@ -18,6 +18,8 @@ export async function makeVisaJwt(
   subjectId: string,
   claims: any,
 ): Promise<string> {
+  // TODO: support ESA
+
   if (keyPrivateJose.kty !== "RSA")
     throw Error("JWT visas only currently support RSA");
 
@@ -39,11 +41,15 @@ export async function makeVisaJwt(
   const newJwtSigner = new SignJWT(claims);
 
   newJwtSigner
-    .setProtectedHeader({ alg: keyPrivateJose.alg!, typ: "JWT", kid: kid })
+    .setProtectedHeader({
+      alg: keyPrivateJose.alg!,
+      typ: "vnd.ga4gh.visa+jwt",
+      kid: kid,
+    })
     .setSubject(subjectId)
     .setIssuedAt()
     .setIssuer(issuer!)
-    .setExpirationTime("365d")
+    .setExpirationTime("14d")
     .setJti(cryptoRandomString({ length: 16, type: "alphanumeric" }));
 
   const jwtVisa = await newJwtSigner.sign(rsaPrivateKey);

@@ -21,6 +21,7 @@ setup:
 # both our local and deploy stages don't actually do a real typescript compile - so this does
 compile:
 	cd backend && npx tsc --noEmit
+	cd iac && npx tsc --noEmit
 
 
 # runs nodemon watching the source - for purely local dev work (needs local dynamodb etc)
@@ -34,7 +35,6 @@ runaws:
 
 
 # deploys via CDK to AWS
-.PHONY: deploy
 deploy:
 	cd iac && UMCCR_DEVELOPER=$(DEVELOPER_NAME) npx cdk deploy --context build="$(DEVELOPER_NAME)" \
 	   --parameters "SemanticVersion=0.0.0-$(DEVELOPER_NAME)" \

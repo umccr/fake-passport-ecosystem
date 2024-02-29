@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -40,12 +40,12 @@
       .form-signin .form-floating:focus-within {
         z-index: 2;
       }
-      .form-signin input[type='email'] {
+      .form-signin input[type="email"] {
         margin-bottom: -1px;
         border-bottom-right-radius: 0;
         border-bottom-left-radius: 0;
       }
-      .form-signin input[type='password'] {
+      .form-signin input[type="password"] {
         margin-bottom: 10px;
         border-top-left-radius: 0;
         border-top-right-radius: 0;
@@ -55,8 +55,11 @@
   <body class="text-center">
     <main class="form-signin">
       <form method="post" action="{{loginUrl}}">
+        <h1 class="h1 mb-3">Broker {{brokerDescription}}</h1>
         <h1 class="h3 mb-3 fw-normal">Sign In</h1>
-        <p>This is the login portion of a simulated OIDC flow - used for testing.</p>
+        <p>
+          This is the login portion of a simulated OIDC flow - used for testing.
+        </p>
 
         <div class="form-floating">
           <select class="form-select" id="floatingUser" name="user">
@@ -68,12 +71,21 @@
           <label for="floatingUser">User Email</label>
         </div>
         <div class="form-floating">
-          <input type="password" class="form-control" id="floatingPassword" disabled />
-          <label for="floatingPassword">Password (not needed)</label>
+          <input
+            type="password"
+            class="form-control"
+            id="floatingPassword"
+            disabled
+          />
+          <label for="floatingPassword"
+            >Password (not needed - this is a demonstration system)</label
+          >
         </div>
 
-        <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
-        <p class="mt-5 mb-3 text-muted">AGHA AAI Test Bed</p>
+        <button class="w-100 btn btn-lg btn-primary" type="submit">
+          Sign in
+        </button>
+        <p class="mt-5 mb-3 text-muted">AAI Test Bed</p>
       </form>
     </main>
   </body>

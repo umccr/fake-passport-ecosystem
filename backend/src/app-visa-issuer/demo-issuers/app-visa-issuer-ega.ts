@@ -1,5 +1,6 @@
 import { AppVisaIssuer } from "../app-visa-issuer";
-import { makeVisaJwt } from "../../common/crypto/make-visa-jwt";
+import { makeVisaJwt } from "../../common/ga4gh/make-visa-jwt";
+import { BRUCE, DAVE, ROR_EMBL } from "../../common/people/subjects";
 
 export class AppVisaIssuerEga extends AppVisaIssuer {
   constructor(domainOrPort: string | number) {
@@ -31,12 +32,30 @@ export class AppVisaIssuerEga extends AppVisaIssuer {
     });
   }
 
-  public async createVisaFor(subjectId: string): Promise<string> {
-    return await makeVisaJwt(this.key, this.issuer, this.kid, subjectId, {
-      ga4gh_visa_v1: {
-        type: "ControlledData",
-        asserted: 1549680000,
-      },
-    });
+  public async createVisaFor(subjectId: string): Promise<string | null> {
+    switch (subjectId) {
+      case DAVE:
+        return await makeVisaJwt(this.key, this.issuer, this.kid, subjectId, {
+          ga4gh_visa_v1: {
+            type: "ControlledAccessGrants",
+            asserted: Math.round(Date.now() / 1000),
+            value: "https://ega-archive.org/datasets/EGAD00000000432",
+            source: "https://ega-archive.org/dacs/EGAC00001000205",
+            by: "dac",
+          },
+        });
+      case BRUCE:
+        return await makeVisaJwt(this.key, this.issuer, this.kid, subjectId, {
+          ga4gh_visa_v1: {
+            type: "ControlledAccessGrants",
+            asserted: Math.round(Date.now() / 1000),
+            value: "https://ega-archive.org/datasets/EGAD00000000001",
+            source: ROR_EMBL,
+            by: "dac",
+          },
+        });
+    }
+
+    return null;
   }
 }

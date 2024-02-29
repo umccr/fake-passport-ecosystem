@@ -1,6 +1,6 @@
 import { importJWK, SignJWT } from "jose";
 import cryptoRandomString from "crypto-random-string";
-import { AnyJose } from "./jose-keys/any-jose";
+import { AnyJose } from "../crypto/jose-keys/any-jose";
 import { isArray, isString } from "lodash";
 
 /**
@@ -19,7 +19,7 @@ export async function makePassportJwt(
   kid: string,
   subjectId: string,
   visas: string[],
-  forServers?: string[]
+  forServers?: string[],
 ): Promise<string> {
   if (keyPrivateJose.kty !== "RSA")
     throw Error("JWT passports only currently support RSA");
@@ -64,8 +64,7 @@ export async function makePassportJwt(
     .setExpirationTime("1hr")
     .setJti(cryptoRandomString({ length: 16, type: "alphanumeric" }));
 
-  if (forServers && forServers.length > 0)
-    newJwtSigner.setAudience(forServers);
+  if (forServers && forServers.length > 0) newJwtSigner.setAudience(forServers);
 
   const jwtPassport = await newJwtSigner.sign(rsaPrivateKey);
 

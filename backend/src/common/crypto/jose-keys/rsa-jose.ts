@@ -2,7 +2,7 @@
 // I am just making some simple definitions just for the ones we are supporting for the moment
 export type RsaJose = {
   // this is the definition we are expecting to see for our keys in 'secret' store
-  kty: 'RSA';
+  kty: "RSA";
   // we could have chosen a bunch of formats here - ended up going with plain hex encoded string
   // (as often that is the format used inside RFC example test data)
   n?: string;

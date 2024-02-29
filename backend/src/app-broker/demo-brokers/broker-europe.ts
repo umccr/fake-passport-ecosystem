@@ -1,10 +1,10 @@
 import { AppBroker } from "../app-broker";
-import { BRUCE, STEVE } from "../../common/people/subjects";
+import { BRUCE, LISA, STEVE, SVEN } from "../../common/people/subjects";
 import { AppVisaIssuer } from "../../app-visa-issuer/app-visa-issuer";
 
 export class BrokerEurope extends AppBroker {
   userList(): string[] {
-    return [BRUCE, STEVE];
+    return [BRUCE, SVEN, LISA];
   }
   description(): string {
     return "Europe";

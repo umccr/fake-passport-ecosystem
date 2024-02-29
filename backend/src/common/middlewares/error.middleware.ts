@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from 'express';
+import { NextFunction, Request, Response } from "express";
 
 export class HttpException extends Error {
   public status: number;
@@ -20,10 +20,15 @@ export class HttpException extends Error {
  * @param res
  * @param next
  */
-export const errorMiddleware = (error: HttpException, req: Request, res: Response, next: NextFunction) => {
+export const errorMiddleware = (
+  error: HttpException,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const status: number = error.status || 500;
-    const message: string = error.message || 'Something went wrong';
+    const message: string = error.message || "Something went wrong";
 
     console.log(`StatusCode : ${status}, Message : ${message}`);
 

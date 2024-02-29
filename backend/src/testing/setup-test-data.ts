@@ -64,9 +64,6 @@ const staticJwks = {
   use: "sig",
 };
 
-
-
-
 const safeCharacterSet = "bcdfghjkmnpqrstvwyz";
 
 /**
