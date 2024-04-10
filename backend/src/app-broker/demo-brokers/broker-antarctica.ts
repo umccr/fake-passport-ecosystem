@@ -1,20 +1,20 @@
 import { AppBroker } from "../app-broker";
-import { BRUCE, DAVE, JOHN, MAX, STEVE } from "../../common/people/subjects";
+import { ANTARCTICA_PEOPLE } from "../../common/people/subjects";
 import { AppVisaIssuer } from "../../app-visa-issuer/app-visa-issuer";
 
-export class BrokerUsa extends AppBroker {
+export class BrokerAntarctica extends AppBroker {
   userList(): string[] {
-    return [BRUCE, DAVE, JOHN, MAX];
+    return ANTARCTICA_PEOPLE;
   }
   description(): string {
-    return "USA";
+    return "Antarctica";
   }
   countryCode(): string {
-    return "us";
+    return "aq";
   }
 
   constructor(domainOrPort: string | number, visaIssuers: AppVisaIssuer[]) {
-    const id = "broker-usa";
+    const id = "broker-antarctica";
     const issuerString =
       typeof domainOrPort === "number"
         ? `http://localhost:${domainOrPort}`

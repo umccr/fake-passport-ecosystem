@@ -5,19 +5,21 @@ import { readFile } from "fs/promises";
 import Handlebars from "handlebars";
 
 const __filename = fileURLToPath(import.meta.url);
-const __htmlname = join(dirname(__filename), "login.html");
+const __htmlname = join(dirname(__filename), "home.html");
 
 /**
- * Render a HTML login page using templating to inject live data.
+ * Render a HTML home page using templating to inject live data.
  *
- * @param loginUrl
+ * @param brokerId
  * @param brokerDescription
+ * @param brokerCountryCode two letter code for the country
  * @param users
  */
-export async function renderLoginPage(
-  loginUrl: string,
-  brokerDescription: string,
-  users: string[],
+export async function renderHomePage(
+    brokerId: string,
+    brokerDescription: string,
+    brokerCountryCode: string,
+    users: string[],
 ): Promise<string> {
   // I realise the templating is no faster because we read/compile every time
   // but this is not needing to be high performance
@@ -26,8 +28,9 @@ export async function renderLoginPage(
   const template = Handlebars.compile(htmlBuffer.toString("utf8"));
 
   return template({
-    loginUrl: loginUrl,
+    brokerId: brokerId,
     brokerDescription: brokerDescription,
+    countryCode: brokerCountryCode,
     users: users,
   });
 }

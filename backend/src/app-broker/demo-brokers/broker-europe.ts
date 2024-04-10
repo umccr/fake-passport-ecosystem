@@ -9,7 +9,11 @@ export class BrokerEurope extends AppBroker {
   description(): string {
     return "Europe";
   }
-  constructor(domainOrPort: string | number, visaIssuers: AppVisaIssuer[]) {
+    countryCode(): string {
+        return "eu";
+    }
+
+    constructor(domainOrPort: string | number, visaIssuers: AppVisaIssuer[]) {
     const id = "broker-europe";
     const issuerString =
       typeof domainOrPort === "number"

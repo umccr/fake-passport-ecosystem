@@ -1,7 +1,7 @@
 {
   "name": "iac",
   "version": "0.0.0",
-  "description": "Infrastructure for a website with API in AWS",
+  "description": "CDK stack for deploying the fake passport ecosystem",
   "scripts": {
     "//comment": "No scripts needed - just use 'npx cdk' to perform IaC tasks"
   },
@@ -10,17 +10,17 @@
     "url": "https://umccr.org/",
     "organization": true
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "dependencies": {
-    "aws-cdk-lib": "2.130.0",
+    "aws-cdk-lib": "2.136.1",
     "constructs": "10.3.0",
-    "esbuild": "0.20.1"
+    "esbuild": "0.20.2"
   },
   "devDependencies": {
-    "@types/node": "20.11.14",
-    "aws-cdk": "2.130 .0",
+    "@types/node": "20.12.7",
+    "aws-cdk": "2.136.1",
     "prettier": "3.2.5",
     "ts-node": "10.9.2",
-    "typescript": "5.3.3"
+    "typescript": "5.4.4"
   }
 }

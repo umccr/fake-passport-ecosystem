@@ -1,14 +1,14 @@
 {
-  "name": "agha-aai-test-bed-backend",
+  "name": "ga4gh-fake-passport-ecosystem-backend",
   "version": "0.0.0",
-  "description": "The backend that provides endpoints/html for an AAI Test Bed",
+  "description": "The backend that provides endpoints/html for an GA4GH Fake Passport Ecosystem",
   "author": {
     "name": "UMCCR",
     "url": "https://umccr.org/",
     "organization": true
   },
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "//note": "see root Makefile for ways to build and run this project"
@@ -53,9 +53,8 @@
     "@types/oidc-provider": "8.4.4",
     "@types/pug": "2.0.10",
     "cross-env": "7.0.3",
-    "nodemon": "3.1.0",
     "prettier": "3.2.5",
-    "ts-node": "10.9.2",
-    "typescript": "5.3.3"
+    "tsx": "4.7.2",
+    "typescript": "5.4.4"
   }
 }
