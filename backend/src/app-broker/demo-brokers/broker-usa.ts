@@ -1,10 +1,12 @@
 import { AppBroker } from "../app-broker";
-import { BRUCE, DAVE, JOHN, MAX, STEVE } from "../../common/people/subjects";
+import {AMERICAN_PEOPLE, BRUCE, SVEN} from "../../common/fake/people";
 import { AppVisaIssuer } from "../../app-visa-issuer/app-visa-issuer";
 
 export class BrokerUsa extends AppBroker {
   userList(): string[] {
-    return [BRUCE, DAVE, JOHN, MAX];
+    // our american broker has americans and some other people from around the globe who can also login
+    // (e.g. simulating something like edugain)
+    return AMERICAN_PEOPLE.concat(SVEN, BRUCE);
   }
   description(): string {
     return "USA";

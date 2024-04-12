@@ -1,6 +1,7 @@
 import { AppVisaIssuer } from "../app-visa-issuer";
 import { makeVisaJwt } from "../../common/ga4gh/make-visa-jwt";
-import { BRUCE, DAVE, ROR_EMBL } from "../../common/people/subjects";
+import {BRUCE, DAVE, EUROPE_PEOPLE} from "../../common/fake/people";
+import { ROR_EMBL } from "../../common/fake/organisations";
 
 export class AppVisaIssuerEga extends AppVisaIssuer {
   public static id = "issuer-ega";
@@ -34,7 +35,7 @@ export class AppVisaIssuerEga extends AppVisaIssuer {
   }
 
   /**
-   * A realistic grant of access to the Cineca dataset.
+   * A realistic grant of access to the CINECA dataset.
    *
    * @private
    */
@@ -48,12 +49,20 @@ export class AppVisaIssuerEga extends AppVisaIssuer {
     }
   }
   public async createVisaFor(subjectId: string): Promise<string | null> {
+
+    // everyone is Europe gets a visa for CINECA
+    if (EUROPE_PEOPLE.includes(subjectId))
+      return await makeVisaJwt(this.key, this.issuer, this.kid, subjectId, {
+        ga4gh_visa_v1: this.createCinecaAccessGrant(),
+      });
+
     switch (subjectId) {
-      case DAVE:
+      // bruce from Australia also gets CINECA
+      case BRUCE:
         return await makeVisaJwt(this.key, this.issuer, this.kid, subjectId, {
           ga4gh_visa_v1: this.createCinecaAccessGrant(),
         });
-      case BRUCE:
+      case DAVE:
         return await makeVisaJwt(this.key, this.issuer, this.kid, subjectId, {
           ga4gh_visa_v1: {
             type: "ControlledAccessGrants",

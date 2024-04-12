@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="h-100">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -17,11 +17,27 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <style>
       .container {
+        width: auto;
         max-width: 800px;
+        padding: 0 15px;
       }
     </style>
   </head>
-  <body>
-    <main class="container">{{> @partial-block }}</main>
+  <body class="d-flex flex-column h-100">
+    <main class="flex-shrink-0">
+      <div class="container">{{> @partial-block }}</div>
+    </main>
+    <footer class="footer mt-auto py-3 bg-light">
+      <div class="container">
+        <div class="d-flex justify-content-between">
+          <span class="text-muted">GA4GH Fake Passport Ecosystem</span>
+          {{#if notBroker }}
+          <a href="/">... back to broker</a>
+          {{else}}
+          <span>&nbsp;</span>
+          {{/if}}
+        </div>
+      </div>
+    </footer>
   </body>
 </html>

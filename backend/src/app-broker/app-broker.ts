@@ -1,4 +1,4 @@
-import express from "express";
+import express, {urlencoded} from "express";
 import cryptoRandomString from "crypto-random-string";
 import lodash from "lodash";
 import Provider, {
@@ -25,6 +25,7 @@ import {
   URN_GRANT_TYPE_TOKEN_EXCHANGE,
 } from "../common/constants";
 import { registerBaseLayout } from "./pages/base";
+import {renderPassportPage} from "./pages/passport";
 
 const { isString, isArray } = lodash;
 
@@ -65,19 +66,23 @@ export abstract class AppBroker {
     // set our logging format
     this.app.use(loggingMiddleware);
 
+    // allow our POST endpoints to receive form data
+    // (used mainly for the demo stuff)
+    this.app.use(urlencoded({ extended: true }));
+
     registerBaseLayout("layout");
 
-    // something useful to demo the broker
+    // something useful to demo the broker (demonstration _without_ doing an OIDC flow)
     this.registerDemonstrationPages();
 
-    // register our interaction endpoints
+    // register our interaction endpoints for the OIDC flow
     this.app.get(
       AppBroker.getInteractionRoute(null),
       setNoCacheMiddleware,
       (req, res, next) => this.handleInteraction(req, res, next),
     );
 
-    // this post is the endpoint when the user hits the Login button
+    // this post is the endpoint when the user hits the Login button during an OIDC flow
     this.app.post(
       AppBroker.getInteractionRoute(null, "login"),
       setNoCacheMiddleware,
@@ -140,9 +145,26 @@ export abstract class AppBroker {
         );
     });
 
-    // we want to be able to bounce back to our home page via POST and have it convert back to GET
-    this.app.post("/", async (req, res) => {
-      res.redirect(302, req.url);
+    this.app.post("/passport-demo", async (req, res) => {
+      if (!req.body || !req.body.user) {
+        res.redirect("/");
+      } else {
+        const passportRequest = await this.createPassportFor(req.body.user);
+        res
+            .status(200)
+            // this is not a real login - it just bounces back to the home page
+            // the real login page can only be used inside an OIDC flow - which needs to be initiated by an OIDC client
+            .send(
+                await renderPassportPage(
+                    this.description(),
+                    this.countryCode(),
+                    req.body.user,
+                    passportRequest.access_token
+                ),
+            );
+
+      }
+
     });
 
     this.app.get("/login-demo", async (req, res) => {
@@ -152,7 +174,7 @@ export abstract class AppBroker {
         // the real login page can only be used inside an OIDC flow - which needs to be initiated by an OIDC client
         .send(
           await renderLoginPage(
-            "/",
+            "/passport-demo",
             this.description(),
             this.countryCode(),
             this.userList(),

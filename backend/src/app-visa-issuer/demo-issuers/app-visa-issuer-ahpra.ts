@@ -2,12 +2,9 @@ import { AppVisaIssuer } from "../app-visa-issuer";
 import { makeVisaJwt } from "../../common/ga4gh/make-visa-jwt";
 import {
   BRUCE, DAVE,
-  JOHN, LISA,
-  ROR_AHPRA, ROR_CSIRO, ROR_EMBL,
-  ROR_MCRI,
-  ROR_NIH,
-  SVEN,
-} from "../../common/people/subjects";
+  JOHN, LISA, SVEN,
+} from "../../common/fake/people";
+import {ROR_CSIRO, ROR_EMBL, ROR_MCRI, ROR_NIH} from "../../common/fake/organisations";
 
 export class AppVisaIssuerAhpra extends AppVisaIssuer {
   constructor(domainOrPort: string | number) {

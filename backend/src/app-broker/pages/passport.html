@@ -1,0 +1,14 @@
+{{#> layout title=brokerDescription notBroker=1 }}
+<h1 class="display-2 d-flex justify-content-between">
+  <span>Passport {{brokerDescription}}</span>
+  <span class="fi fi-{{countryCode}}">&nbsp;</span>
+</h1>
+<section class="mt-5">
+  <p>For user with id <code>{{name}}</code> we have generated the following passport</p>
+  <pre class="text-wrap text-break">{{passport}}</pre>
+  <p>
+    You can check the validity/content of the passport using a JWT decoded
+    such as <a href="https://jwt.davetonge.co.uk">JSON Web Token Verifier</a>.
+  </p>
+</section>
+{{/layout}}

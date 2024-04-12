@@ -1,5 +1,5 @@
 import { AppBroker } from "../app-broker";
-import { ANTARCTICA_PEOPLE } from "../../common/people/subjects";
+import { ANTARCTICA_PEOPLE } from "../../common/fake/people";
 import { AppVisaIssuer } from "../../app-visa-issuer/app-visa-issuer";
 
 export class BrokerAntarctica extends AppBroker {
