@@ -1,22 +1,20 @@
 import { AppBroker } from "../app-broker";
-import {AMERICAN_PEOPLE, BRUCE, SVEN} from "../../common/fake/people";
+import { ANTARCTICA_PEOPLE } from "../../common/fake/people";
 import { AppVisaIssuer } from "../../app-visa-issuer/app-visa-issuer";
 
-export class BrokerUsa extends AppBroker {
+export class BrokerAntarctica extends AppBroker {
   userList(): string[] {
-    // our american broker has americans and some other people from around the globe who can also login
-    // (e.g. simulating something like edugain)
-    return AMERICAN_PEOPLE.concat(SVEN, BRUCE);
+    return ANTARCTICA_PEOPLE;
   }
   description(): string {
-    return "USA";
+    return "Antarctica";
   }
   countryCode(): string {
-    return "us";
+    return "aq";
   }
 
   constructor(domainOrPort: string | number, visaIssuers: AppVisaIssuer[]) {
-    const id = "broker-usa";
+    const id = "broker-antarctica";
     const issuerString =
       typeof domainOrPort === "number"
         ? `http://localhost:${domainOrPort}`

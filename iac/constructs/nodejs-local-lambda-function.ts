@@ -86,8 +86,7 @@ export class NodeJsLocalLambdaFunction extends Construct {
         ].join(" "),
         commandHooks: {
           afterBundling: (inputDir: string, outputDir: string): string[] => [
-            `cp ${inputDir}/../backend/src/app-broker/pages/home/home.pug ${outputDir}`,
-            `cp ${inputDir}/../backend/src/app-broker/pages/login/login.html ${outputDir}`,
+            `cp ${inputDir}/../backend/src/app-broker/pages/*.html ${outputDir}`,
           ],
           beforeBundling: (inputDir: string, outputDir: string): string[] => [],
           beforeInstall: (inputDir: string, outputDir: string): string[] => [],

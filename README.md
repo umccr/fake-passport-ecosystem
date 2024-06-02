@@ -1,14 +1,21 @@
-# agha-aai-test-bed
+# GA4GH Fake Passport Ecosystem
 
-A framework for setting up passport/visa test suites. Basically an AWS deployable
-set of endpoints for the purposes of demonstrating GA4GH passport/visa flows.
+A deployable passport ecosystem with fake brokers, visa issuers and
+users. Can be used for simulations and testing.
 
+## Cloud Deployment
+
+```
+make deploy
+```
+
+(currently this is set up only for UMCCR - WIP)
 
 ## Local Development
 
 ### Create a dynamo table
 
-The test bed uses a single dynamo table for storing all state information
+The system uses a single dynamo table for storing all state information
 from the OIDC flow.
 
 To run locally, an equivalent dynamo table needs to be created manually.

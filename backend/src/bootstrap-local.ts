@@ -4,6 +4,7 @@ import { AppVisaIssuerAhpra } from "./app-visa-issuer/demo-issuers/app-visa-issu
 import { BrokerEurope } from "./app-broker/demo-brokers/broker-europe";
 import { BrokerAustralia } from "./app-broker/demo-brokers/broker-australia";
 import { BrokerUsa } from "./app-broker/demo-brokers/broker-usa";
+import {BrokerAntarctica} from "./app-broker/demo-brokers/broker-antarctica";
 
 // the development node bootstrap entrypoint
 // this entrypoint is used for running the backend locally on a dev machine
@@ -15,6 +16,7 @@ console.log("Creating fresh test data");
 const PORT_EUROPE = 3001;
 const PORT_AUSTRALIA = 3002;
 const PORT_USA = 3003;
+const PORT_ANTARCTICA = 3004;
 
 const PORT_EGA = 4000;
 const PORT_AHPRA = 4001;
@@ -44,9 +46,12 @@ setupTestData().then(async () => {
 
   const appBrokerUsa = new BrokerUsa(PORT_USA, [appVisaIssuerAhpra]);
 
+  const appBrokerAntarctica = new BrokerAntarctica(PORT_ANTARCTICA, []);
+
   await Promise.all([
     appBrokerEurope.listen(PORT_EUROPE),
     appBrokerAustralia.listen(PORT_AUSTRALIA),
     appBrokerUsa.listen(PORT_USA),
+    appBrokerAntarctica.listen(PORT_ANTARCTICA),
   ]);
 });

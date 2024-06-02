@@ -1,17 +1,19 @@
 import { AppVisaIssuer } from "../app-visa-issuer";
 import { makeVisaJwt } from "../../common/ga4gh/make-visa-jwt";
-import { BRUCE, DAVE, ROR_EMBL } from "../../common/people/subjects";
+import {BRUCE, DAVE, EUROPE_PEOPLE} from "../../common/fake/people";
+import { ROR_EMBL } from "../../common/fake/organisations";
 
 export class AppVisaIssuerEga extends AppVisaIssuer {
+  public static id = "issuer-ega";
+
   constructor(domainOrPort: string | number) {
-    const id = "issuer-ega";
     const issuerString =
       typeof domainOrPort === "number"
         ? `http://localhost:${domainOrPort}`
-        : `https://${id}.${domainOrPort}`;
+        : `https://${AppVisaIssuerEga.id}.${domainOrPort}`;
 
     // this is a 2048-bit RSA key
-    super(id, issuerString, {
+    super(AppVisaIssuerEga.id, issuerString, {
       pBase64Url:
         "3a9xP8-VopskVxwyLzSYkDXxZXMziiSsG-zgIoBJzz1Md-Fv7lDvjZqHy9L1EHbtg8SIllhnshZRR38XjtLeFJopkxa7oCrmFi3P-v2zv6Ytwbzrh74w30HCBC7Ail6W9R4iA7UKs-euKzbZosIafI3oqML2ldVid7G_hTdbFv8",
       kty: "RSA",
@@ -32,19 +34,35 @@ export class AppVisaIssuerEga extends AppVisaIssuer {
     });
   }
 
+  /**
+   * A realistic grant of access to the CINECA dataset.
+   *
+   * @private
+   */
+  private createCinecaAccessGrant() {
+    return {
+      type: "ControlledAccessGrants",
+      asserted: Math.round(Date.now() / 1000),
+      value: "https://ega-archive.org/datasets/EGAD00001006673",
+      source: "https://ega-archive.org/dacs/EGAC00001000514",
+      by: "dac",
+    }
+  }
   public async createVisaFor(subjectId: string): Promise<string | null> {
+
+    // everyone is Europe gets a visa for CINECA
+    if (EUROPE_PEOPLE.includes(subjectId))
+      return await makeVisaJwt(this.key, this.issuer, this.kid, subjectId, {
+        ga4gh_visa_v1: this.createCinecaAccessGrant(),
+      });
+
     switch (subjectId) {
-      case DAVE:
-        return await makeVisaJwt(this.key, this.issuer, this.kid, subjectId, {
-          ga4gh_visa_v1: {
-            type: "ControlledAccessGrants",
-            asserted: Math.round(Date.now() / 1000),
-            value: "https://ega-archive.org/datasets/EGAD00000000432",
-            source: "https://ega-archive.org/dacs/EGAC00001000205",
-            by: "dac",
-          },
-        });
+      // bruce from Australia also gets CINECA
       case BRUCE:
+        return await makeVisaJwt(this.key, this.issuer, this.kid, subjectId, {
+          ga4gh_visa_v1: this.createCinecaAccessGrant(),
+        });
+      case DAVE:
         return await makeVisaJwt(this.key, this.issuer, this.kid, subjectId, {
           ga4gh_visa_v1: {
             type: "ControlledAccessGrants",

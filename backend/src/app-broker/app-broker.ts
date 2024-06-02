@@ -1,29 +1,33 @@
-import express from "express";
-import { errorMiddleware } from "../common/middlewares/error.middleware";
+import express, {urlencoded} from "express";
+import cryptoRandomString from "crypto-random-string";
+import lodash from "lodash";
 import Provider, {
   Configuration,
   JWKS,
   KoaContextWithOIDC,
   UnknownObject,
 } from "oidc-provider";
+import { errorMiddleware } from "../common/middlewares/error.middleware";
 import { DynamoDBAdapter } from "../common/db/oidc-provider-dynamodb-adapter";
-import _, { isString } from "lodash";
-import { renderLoginPage } from "./pages/login/login";
 import {
   loggingMiddleware,
   parseMiddleware,
   setNoCacheMiddleware,
 } from "../common/middlewares/util.middleware";
+import { renderLoginPage } from "./pages/login";
+import { renderHomePage } from "./pages/home";
 import { AppVisaIssuer } from "../app-visa-issuer/app-visa-issuer";
 import { AnyJose } from "../common/crypto/jose-keys/any-jose";
 import { makeJwksForOidcProvider } from "../common/crypto/make-jwks";
-import cryptoRandomString from "crypto-random-string";
-import { renderHomePage } from "./pages/home/home";
 import { makePassportJwt } from "../common/ga4gh/make-passport-jwt";
 import {
   URN_GA4GH_TOKEN_TYPE_PASSPORT,
   URN_GRANT_TYPE_TOKEN_EXCHANGE,
 } from "../common/constants";
+import { registerBaseLayout } from "./pages/base";
+import {renderPassportPage} from "./pages/passport";
+
+const { isString, isArray } = lodash;
 
 /**
  * An express app wrapper that acts as a simulated GA4GH passport broker. The broker
@@ -62,21 +66,23 @@ export abstract class AppBroker {
     // set our logging format
     this.app.use(loggingMiddleware);
 
-    // a home page for each broker that can give out useful info
-    this.app.get("/", async (req, res) => {
-      res
-        .status(200)
-        .send(await renderHomePage(id, this.description(), this.userList()));
-    });
+    // allow our POST endpoints to receive form data
+    // (used mainly for the demo stuff)
+    this.app.use(urlencoded({ extended: true }));
 
-    // register our interaction endpoints
+    registerBaseLayout("layout");
+
+    // something useful to demo the broker (demonstration _without_ doing an OIDC flow)
+    this.registerDemonstrationPages();
+
+    // register our interaction endpoints for the OIDC flow
     this.app.get(
       AppBroker.getInteractionRoute(null),
       setNoCacheMiddleware,
       (req, res, next) => this.handleInteraction(req, res, next),
     );
 
-    // this post is the endpoint when the user hits the Login button
+    // this post is the endpoint when the user hits the Login button during an OIDC flow
     this.app.post(
       AppBroker.getInteractionRoute(null, "login"),
       setNoCacheMiddleware,
@@ -112,6 +118,70 @@ export abstract class AppBroker {
   abstract userList(): string[];
 
   abstract description(): string;
+
+  abstract countryCode(): string;
+
+  /**
+   * Register a set of pages and interactions that are useful for demonstrations.
+   * This includes a "home" page that gives out information, and a (non OIDC!) demo
+   * "login" flow that just returns back to the home. The non OIDC login
+   * is just so we can easily demo what the login page looks like! Normally
+   * the login page is rendered as part of the OIDC flow on a custom URL.
+   *
+   * @protected
+   */
+  private registerDemonstrationPages() {
+    // a home page for each broker that can give out useful info
+    this.app.get("/", async (req, res) => {
+      res
+        .status(200)
+        .send(
+          await renderHomePage(
+            this.getId(),
+            this.description(),
+            this.countryCode(),
+            this.userList(),
+          ),
+        );
+    });
+
+    this.app.post("/passport-demo", async (req, res) => {
+      if (!req.body || !req.body.user) {
+        res.redirect("/");
+      } else {
+        const passportRequest = await this.createPassportFor(req.body.user);
+        res
+            .status(200)
+            // this is not a real login - it just bounces back to the home page
+            // the real login page can only be used inside an OIDC flow - which needs to be initiated by an OIDC client
+            .send(
+                await renderPassportPage(
+                    this.description(),
+                    this.countryCode(),
+                    req.body.user,
+                    passportRequest.access_token
+                ),
+            );
+
+      }
+
+    });
+
+    this.app.get("/login-demo", async (req, res) => {
+      res
+        .status(200)
+        // this is not a real login - it just bounces back to the home page
+        // the real login page can only be used inside an OIDC flow - which needs to be initiated by an OIDC client
+        .send(
+          await renderLoginPage(
+            "/passport-demo",
+            this.description(),
+            this.countryCode(),
+            this.userList(),
+          ),
+        );
+    });
+  }
 
   protected async createPassportFor(sub: string): Promise<any> {
     const allVisas = await Promise.all(
@@ -435,6 +505,7 @@ export abstract class AppBroker {
         await renderLoginPage(
           AppBroker.getInteractionRoute(uid, "login"),
           this.description(),
+          this.countryCode(),
           this.userList(),
         ),
       );
@@ -485,7 +556,7 @@ export abstract class AppBroker {
     if (!grant) throw new Error("grant was empty");
 
     if (details.missingOIDCScope) {
-      if (_.isArray(details.missingOIDCScope))
+      if (isArray(details.missingOIDCScope))
         grant.addOIDCScope(details.missingOIDCScope.join(" "));
     }
     if (details.missingOIDCClaims) {

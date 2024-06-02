@@ -1,7 +1,10 @@
 import { importJWK, SignJWT } from "jose";
 import cryptoRandomString from "crypto-random-string";
 import { AnyJose } from "../crypto/jose-keys/any-jose";
-import { isArray, isString } from "lodash";
+import lodash from "lodash";
+
+// my god - please make the pain go away
+const { isArray, isString } = lodash;
 
 /**
  * Make a JWT string representing a GA4GH passport.

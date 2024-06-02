@@ -1,0 +1,17 @@
+{{#> layout title=brokerDescription }}
+<h1 class="display-2 d-flex justify-content-between">
+  <span>Broker {{brokerDescription}}</span>
+  <span class="fi fi-{{countryCode}}">&nbsp;</span>
+</h1>
+<section class="mt-5">
+  <p>
+    I am a GA4GH Fake Passport Ecosystem broker with id
+    <code>{{brokerId}}</code>.
+  </p>
+  <p>
+    We can visit the <a href="login-demo">login page</a> for the accompanying
+    fake IdP - though it will only work properly as part of an actual OIDC flow.
+    This is just what it looks like.
+  </p>
+</section>
+{{/layout}}

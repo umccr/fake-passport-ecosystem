@@ -1,14 +1,18 @@
 import { AppBroker } from "../app-broker";
-import { BRUCE, LISA, STEVE, SVEN } from "../../common/people/subjects";
+import { EUROPE_PEOPLE } from "../../common/fake/people";
 import { AppVisaIssuer } from "../../app-visa-issuer/app-visa-issuer";
 
 export class BrokerEurope extends AppBroker {
   userList(): string[] {
-    return [BRUCE, SVEN, LISA];
+    return EUROPE_PEOPLE;
   }
   description(): string {
     return "Europe";
   }
+  countryCode(): string {
+    return "eu";
+  }
+
   constructor(domainOrPort: string | number, visaIssuers: AppVisaIssuer[]) {
     const id = "broker-europe";
     const issuerString =
